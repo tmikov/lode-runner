@@ -51,6 +51,9 @@ function getValidMoves(level, x, y, laddersRevealed) {
 
             if (canWalkLeft || isHangable(currentTile)) {
                 moves.push({ x: x - 1, y, cost: 1, type: 'walk' });
+            } else {
+                // Can drop off ledge (will fall) - higher cost to prefer walking
+                moves.push({ x: x - 1, y, cost: 3, type: 'fall_start' });
             }
         }
 
@@ -68,6 +71,9 @@ function getValidMoves(level, x, y, laddersRevealed) {
 
             if (canWalkRight || isHangable(currentTile)) {
                 moves.push({ x: x + 1, y, cost: 1, type: 'walk' });
+            } else {
+                // Can drop off ledge (will fall) - higher cost to prefer walking
+                moves.push({ x: x + 1, y, cost: 3, type: 'fall_start' });
             }
         }
     }
