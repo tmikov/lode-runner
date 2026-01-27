@@ -28,8 +28,8 @@ function getValidMoves(level, x, y, laddersRevealed) {
     const currentTile = level.getTile(x, y);
     const tileBelow = level.getTile(x, y + 1);
 
-    // Check if we have ground support
-    const hasGround = isSolid(tileBelow) ||
+    // Check if we have ground support (using level.isSolidAt for filled holes)
+    const hasGround = level.isSolidAt(x, y + 1) ||
                       isClimbable(currentTile, laddersRevealed) ||
                       isClimbable(tileBelow, laddersRevealed) ||
                       isHangable(currentTile);
@@ -39,22 +39,18 @@ function getValidMoves(level, x, y, laddersRevealed) {
         // Move left
         const leftTile = level.getTile(x - 1, y);
         if (!isSolid(leftTile)) {
-            // Check if we can walk there (has support on target)
             const leftBelow = level.getTile(x - 1, y + 1);
 
-            // AVOID dug holes - don't walk over them!
-            if (leftBelow === TILE_TYPES.DUG_HOLE) {
-                // Don't add this move - it's a trap!
-            } else {
-                const canWalkLeft = isSolid(leftBelow) ||
-                                   isClimbable(leftTile, laddersRevealed) ||
-                                   isClimbable(leftBelow, laddersRevealed) ||
-                                   isHangable(leftTile);
+            // Enemies don't know about dug holes - they'll fall in!
+            // Treat original brick positions as walkable for pathfinding
+            const canWalkLeft = level.isSolidAt(x - 1, y + 1) ||
+                               leftBelow === TILE_TYPES.DUG_HOLE || // Treat hole as walkable (they'll fall)
+                               isClimbable(leftTile, laddersRevealed) ||
+                               isClimbable(leftBelow, laddersRevealed) ||
+                               isHangable(leftTile);
 
-                if (canWalkLeft || isHangable(currentTile)) {
-                    moves.push({ x: x - 1, y, cost: 1, type: 'walk' });
-                }
-                // Don't allow fall_start moves - enemies shouldn't intentionally fall
+            if (canWalkLeft || isHangable(currentTile)) {
+                moves.push({ x: x - 1, y, cost: 1, type: 'walk' });
             }
         }
 
@@ -63,19 +59,15 @@ function getValidMoves(level, x, y, laddersRevealed) {
         if (!isSolid(rightTile)) {
             const rightBelow = level.getTile(x + 1, y + 1);
 
-            // AVOID dug holes - don't walk over them!
-            if (rightBelow === TILE_TYPES.DUG_HOLE) {
-                // Don't add this move - it's a trap!
-            } else {
-                const canWalkRight = isSolid(rightBelow) ||
-                                    isClimbable(rightTile, laddersRevealed) ||
-                                    isClimbable(rightBelow, laddersRevealed) ||
-                                    isHangable(rightTile);
+            // Enemies don't know about dug holes - they'll fall in!
+            const canWalkRight = level.isSolidAt(x + 1, y + 1) ||
+                                rightBelow === TILE_TYPES.DUG_HOLE || // Treat hole as walkable (they'll fall)
+                                isClimbable(rightTile, laddersRevealed) ||
+                                isClimbable(rightBelow, laddersRevealed) ||
+                                isHangable(rightTile);
 
-                if (canWalkRight || isHangable(currentTile)) {
-                    moves.push({ x: x + 1, y, cost: 1, type: 'walk' });
-                }
-                // Don't allow fall_start moves - enemies shouldn't intentionally fall
+            if (canWalkRight || isHangable(currentTile)) {
+                moves.push({ x: x + 1, y, cost: 1, type: 'walk' });
             }
         }
     }

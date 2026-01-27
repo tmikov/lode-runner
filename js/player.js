@@ -353,8 +353,8 @@ export class Player {
             return;
         }
 
-        // Land on solid ground
-        if (isSolid(tileBelow)) {
+        // Land on solid ground (includes filled holes)
+        if (this.level.isSolidAt(this.tileX, newTileY + 1)) {
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(PLAYER_STATES.IDLE);
@@ -396,8 +396,8 @@ export class Player {
         const currentTile = this.level.getTile(this.tileX, this.tileY);
         const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
 
-        // On solid ground
-        if (isSolid(tileBelow)) return true;
+        // On solid ground (includes filled holes)
+        if (this.level.isSolidAt(this.tileX, this.tileY + 1)) return true;
 
         // On ladder
         if (isClimbable(currentTile, this.level.laddersRevealed)) return true;

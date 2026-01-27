@@ -14,6 +14,7 @@ export class Level {
         this.goldCount = levelData.goldCount;
         this.collectedGold = 0;
         this.dugHoles = new Map(); // key: "x,y", value: DugHole
+        this.occupiedHoles = new Set(); // holes with enemies in them
         this.laddersRevealed = false;
         console.log(`Level loaded: ${this.width}x${this.height}, ${this.goldCount} gold pieces`);
     }
@@ -149,7 +150,38 @@ export class Level {
         this.tiles = [...this.originalTiles];
         this.collectedGold = 0;
         this.dugHoles.clear();
+        this.occupiedHoles.clear();
         this.laddersRevealed = false;
+    }
+
+    // Mark a hole as occupied by an enemy
+    occupyHole(x, y) {
+        this.occupiedHoles.add(`${x},${y}`);
+    }
+
+    // Unmark a hole as occupied
+    vacateHole(x, y) {
+        this.occupiedHoles.delete(`${x},${y}`);
+    }
+
+    // Check if a hole is occupied (has enemy in it)
+    isHoleOccupied(x, y) {
+        return this.occupiedHoles.has(`${x},${y}`);
+    }
+
+    // Check if a dug hole is "filled" (occupied) and thus walkable
+    isFilledHole(x, y) {
+        const tile = this.getTile(x, y);
+        return tile === TILE_TYPES.DUG_HOLE && this.isHoleOccupied(x, y);
+    }
+
+    // Check if a tile provides solid ground support (solid tile OR filled hole)
+    isSolidAt(x, y) {
+        const tile = this.getTile(x, y);
+        if (tile === TILE_TYPES.BRICK || tile === TILE_TYPES.SOLID) {
+            return true;
+        }
+        return this.isFilledHole(x, y);
     }
 
     // Check if a position provides support (can stand on)

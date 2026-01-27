@@ -277,12 +277,23 @@ export class Enemy {
 
         // Check for dug hole (trap)
         if (currentTile === TILE_TYPES.DUG_HOLE) {
-            // Fell into hole - get trapped
+            // Check if hole is already occupied - if so, walk over it
+            if (this.level.isHoleOccupied(this.tileX, newTileY)) {
+                // Hole is filled, treat as solid - land on it
+                this.tileY = newTileY;
+                this.alignToTile();
+                this.setState(ENEMY_STATES.CHASING);
+                return;
+            }
+            // Fell into empty hole - get trapped
             console.log(`Enemy trapped in hole at (${this.tileX}, ${newTileY})`);
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(ENEMY_STATES.TRAPPED);
             this.trapTimer = CONFIG.ENEMY_TRAP_TIME;
+            this.trappedX = this.tileX; // Remember where we're trapped
+            this.trappedY = this.tileY;
+            this.level.occupyHole(this.tileX, this.tileY);
             this.dropGold();
             return;
         }
@@ -303,8 +314,8 @@ export class Enemy {
             return;
         }
 
-        // Land on solid ground
-        if (isSolid(tileBelow)) {
+        // Land on solid ground (includes filled holes)
+        if (this.level.isSolidAt(this.tileX, newTileY + 1)) {
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(ENEMY_STATES.CHASING);
@@ -321,6 +332,7 @@ export class Enemy {
         if (this.level.isHoleRegenerating(this.tileX, this.tileY)) {
             // Enemy dies, will respawn
             console.log(`Enemy dying in hole at (${this.tileX}, ${this.tileY})`);
+            this.level.vacateHole(this.trappedX, this.trappedY);
             this.setState(ENEMY_STATES.RESPAWNING);
             this.respawnTimer = CONFIG.ENEMY_RESPAWN_DELAY;
             this.visible = false;
@@ -333,6 +345,7 @@ export class Enemy {
             this.emergeTargetY = this.tileY - 1;
             this.path = []; // Clear old path so we recalculate after emerging
             this.pathUpdateTimer = 0;
+            this.level.vacateHole(this.trappedX, this.trappedY);
             this.setState(ENEMY_STATES.EMERGING);
         }
     }
@@ -352,16 +365,17 @@ export class Enemy {
 
                 // After emerging, immediately try to move to a side with solid ground
                 const leftTile = this.level.getTile(this.tileX - 1, this.tileY);
-                const leftBelow = this.level.getTile(this.tileX - 1, this.tileY + 1);
                 const rightTile = this.level.getTile(this.tileX + 1, this.tileY);
-                const rightBelow = this.level.getTile(this.tileX + 1, this.tileY + 1);
 
-                const canGoLeft = !isSolid(leftTile) && isSolid(leftBelow);
-                const canGoRight = !isSolid(rightTile) && isSolid(rightBelow);
+                // Check for solid ground (includes filled holes)
+                const leftBelowSafe = this.level.isSolidAt(this.tileX - 1, this.tileY + 1);
+                const rightBelowSafe = this.level.isSolidAt(this.tileX + 1, this.tileY + 1);
+
+                const canGoLeft = !isSolid(leftTile) && leftBelowSafe;
+                const canGoRight = !isSolid(rightTile) && rightBelowSafe;
 
                 console.log(`Emerged at (${this.tileX}, ${this.tileY}), player at (${playerTileX}, ${playerTileY})`);
-                console.log(`  Left: tile=${leftTile}, below=${leftBelow}, canGo=${canGoLeft}`);
-                console.log(`  Right: tile=${rightTile}, below=${rightBelow}, canGo=${canGoRight}`);
+                console.log(`  Left: canGo=${canGoLeft}, Right: canGo=${canGoRight}`);
 
                 // Set state first, then start movement (setState resets moving flag)
                 this.setState(ENEMY_STATES.CHASING);
@@ -426,7 +440,8 @@ export class Enemy {
         const currentTile = this.level.getTile(this.tileX, this.tileY);
         const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
 
-        if (isSolid(tileBelow)) return true;
+        // Solid ground (includes filled holes)
+        if (this.level.isSolidAt(this.tileX, this.tileY + 1)) return true;
         if (isClimbable(currentTile, this.level.laddersRevealed)) return true;
         if (isClimbable(tileBelow, this.level.laddersRevealed)) return true;
         if (isHangable(currentTile)) return true;
