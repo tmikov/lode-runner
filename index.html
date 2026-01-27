@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lode Runner</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-overlay">
+            <div id="score-display">SCORE: <span id="score">0</span></div>
+            <div id="gold-display">GOLD: <span id="gold">0</span>/<span id="gold-total">0</span></div>
+            <div id="lives-display">LIVES: <span id="lives">3</span></div>
+        </div>
+        <div id="message-overlay" class="hidden">
+            <div id="message-text"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/kontra/kontra.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
