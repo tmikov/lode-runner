@@ -135,6 +135,14 @@ export class Player {
             return;
         }
 
+        // Check for descending onto a ladder below
+        if (inputMove.dy > 0 && isClimbable(tileBelow, this.level.laddersRevealed)) {
+            this.setState(PLAYER_STATES.CLIMBING);
+            // Start moving down immediately
+            this.startMovement(this.tileX, this.tileY + 1);
+            return;
+        }
+
         // Check for horizontal movement
         if (inputMove.dx !== 0) {
             this.facingRight = inputMove.dx > 0;
@@ -182,6 +190,13 @@ export class Player {
 
         // Check for climbing
         if (inputMove.dy !== 0 && isClimbable(currentTile, this.level.laddersRevealed)) {
+            this.setState(PLAYER_STATES.CLIMBING);
+            return;
+        }
+
+        // Check for descending onto a ladder below
+        const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
+        if (inputMove.dy > 0 && isClimbable(tileBelow, this.level.laddersRevealed)) {
             this.setState(PLAYER_STATES.CLIMBING);
             return;
         }
