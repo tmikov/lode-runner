@@ -1,5 +1,7 @@
 # Lode Runner
 
+A browser-based Lode Runner clone written entirely by Claude (Anthropic's AI assistant).
+
 **[Play it here](https://tmikov.github.io/lode-runner/)**
 
 ## Controls
