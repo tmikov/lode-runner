@@ -88,7 +88,7 @@ export class Enemy {
                 this.updateTrapped(dt);
                 break;
             case ENEMY_STATES.EMERGING:
-                this.updateEmerging(dt);
+                this.updateEmerging(dt, playerTileX, playerTileY);
                 break;
             case ENEMY_STATES.RESPAWNING:
                 this.updateRespawning(dt);
@@ -278,6 +278,7 @@ export class Enemy {
         // Check for dug hole (trap)
         if (currentTile === TILE_TYPES.DUG_HOLE) {
             // Fell into hole - get trapped
+            console.log(`Enemy trapped in hole at (${this.tileX}, ${newTileY})`);
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(ENEMY_STATES.TRAPPED);
@@ -319,6 +320,7 @@ export class Enemy {
         // Check if hole is regenerating with enemy in it
         if (this.level.isHoleRegenerating(this.tileX, this.tileY)) {
             // Enemy dies, will respawn
+            console.log(`Enemy dying in hole at (${this.tileX}, ${this.tileY})`);
             this.setState(ENEMY_STATES.RESPAWNING);
             this.respawnTimer = CONFIG.ENEMY_RESPAWN_DELAY;
             this.visible = false;
@@ -326,14 +328,18 @@ export class Enemy {
         }
 
         if (this.trapTimer <= 0) {
-            // Climb out
+            // Climb out - store the target position
+            console.log(`Enemy emerging from trap at (${this.tileX}, ${this.tileY}), timer expired`);
+            this.emergeTargetY = this.tileY - 1;
+            this.path = []; // Clear old path so we recalculate after emerging
+            this.pathUpdateTimer = 0;
             this.setState(ENEMY_STATES.EMERGING);
         }
     }
 
-    updateEmerging(dt) {
-        // Move up out of hole
-        const targetY = this.tileY - 1;
+    updateEmerging(dt, playerTileX, playerTileY) {
+        // Move up out of hole, then to the side
+        const targetY = this.emergeTargetY;
         const upTile = this.level.getTile(this.tileX, targetY);
 
         if (!isSolid(upTile)) {
@@ -343,12 +349,55 @@ export class Enemy {
             if (this.y <= targetY * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2) {
                 this.tileY = targetY;
                 this.alignToTile();
+
+                // After emerging, immediately try to move to a side with solid ground
+                const leftTile = this.level.getTile(this.tileX - 1, this.tileY);
+                const leftBelow = this.level.getTile(this.tileX - 1, this.tileY + 1);
+                const rightTile = this.level.getTile(this.tileX + 1, this.tileY);
+                const rightBelow = this.level.getTile(this.tileX + 1, this.tileY + 1);
+
+                const canGoLeft = !isSolid(leftTile) && isSolid(leftBelow);
+                const canGoRight = !isSolid(rightTile) && isSolid(rightBelow);
+
+                console.log(`Emerged at (${this.tileX}, ${this.tileY}), player at (${playerTileX}, ${playerTileY})`);
+                console.log(`  Left: tile=${leftTile}, below=${leftBelow}, canGo=${canGoLeft}`);
+                console.log(`  Right: tile=${rightTile}, below=${rightBelow}, canGo=${canGoRight}`);
+
+                // Set state first, then start movement (setState resets moving flag)
                 this.setState(ENEMY_STATES.CHASING);
+
+                // Prefer moving towards the player
+                const playerIsLeft = playerTileX < this.tileX;
+                const playerIsRight = playerTileX > this.tileX;
+
+                if (canGoLeft && canGoRight) {
+                    // Both sides safe - go towards player
+                    if (playerIsLeft) {
+                        this.startMovement(this.tileX - 1, this.tileY);
+                        this.facingRight = false;
+                        console.log(`  Moving left towards player`);
+                    } else {
+                        this.startMovement(this.tileX + 1, this.tileY);
+                        this.facingRight = true;
+                        console.log(`  Moving right towards player`);
+                    }
+                } else if (canGoLeft) {
+                    this.startMovement(this.tileX - 1, this.tileY);
+                    this.facingRight = false;
+                    console.log(`  Moving left (only option)`);
+                } else if (canGoRight) {
+                    this.startMovement(this.tileX + 1, this.tileY);
+                    this.facingRight = true;
+                    console.log(`  Moving right (only option)`);
+                } else {
+                    console.log(`  No safe side! Will fall back in.`);
+                }
             }
         } else {
-            // Can't emerge, stay trapped
+            // Can't emerge, tile above is solid - stay trapped and try again
+            console.log(`Cannot emerge at (${this.tileX}, ${this.tileY}), tile above (${this.tileX}, ${targetY}) = ${upTile} is solid`);
             this.setState(ENEMY_STATES.TRAPPED);
-            this.trapTimer = 1.0; // Try again soon
+            this.trapTimer = 1.0;
         }
     }
 
