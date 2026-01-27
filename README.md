@@ -1,6 +1,6 @@
 # Lode Runner
 
-![Lode Runner Screenshot](assets/screenshot.png)
+**[Play it here](https://tmikov.github.io/lode-runner/)**
 
 ## Controls
 
@@ -11,3 +11,5 @@
 | Dig right | X or E |
 | Pause | P or Escape |
 | Restart | R |
+
+![Lode Runner Screenshot](assets/screenshot.png)
