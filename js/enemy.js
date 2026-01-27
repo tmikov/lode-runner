@@ -135,6 +135,8 @@ export class Enemy {
         if (this.pathUpdateTimer <= 0 || this.path.length === 0) {
             this.updatePath(playerTileX, playerTileY);
             this.pathUpdateTimer = CONFIG.PATH_UPDATE_INTERVAL + (Math.random() - 0.5) * 0.2;
+            console.log(`Enemy at (${this.tileX}, ${this.tileY}) path to player (${playerTileX}, ${playerTileY}):`,
+                this.path.slice(0, 5).map(p => `(${p.x},${p.y})`).join(' -> '));
         }
 
         // Get next move from path
@@ -201,6 +203,8 @@ export class Enemy {
         if (this.pathUpdateTimer <= 0) {
             this.updatePath(playerTileX, playerTileY);
             this.pathUpdateTimer = CONFIG.PATH_UPDATE_INTERVAL;
+            console.log(`Enemy CLIMBING at (${this.tileX}, ${this.tileY}) path to player (${playerTileX}, ${playerTileY}):`,
+                this.path.slice(0, 5).map(p => `(${p.x},${p.y})`).join(' -> '));
         }
 
         const move = getNextMoveFromPath(this.path, this.tileX, this.tileY);
@@ -248,6 +252,8 @@ export class Enemy {
         if (this.pathUpdateTimer <= 0) {
             this.updatePath(playerTileX, playerTileY);
             this.pathUpdateTimer = CONFIG.PATH_UPDATE_INTERVAL;
+            console.log(`Enemy CLIMBING at (${this.tileX}, ${this.tileY}) path to player (${playerTileX}, ${playerTileY}):`,
+                this.path.slice(0, 5).map(p => `(${p.x},${p.y})`).join(' -> '));
         }
 
         const move = getNextMoveFromPath(this.path, this.tileX, this.tileY);

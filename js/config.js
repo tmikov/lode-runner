@@ -40,7 +40,7 @@ export const CONFIG = {
     GOLD_SPARKLE_TIME: 0.2,
 
     // Pathfinding
-    PATH_UPDATE_INTERVAL: 0.5,  // Seconds between path recalculation
+    PATH_UPDATE_INTERVAL: 0.2,  // Seconds between path recalculation
 
     // Scoring
     SCORE_GOLD: 100,
