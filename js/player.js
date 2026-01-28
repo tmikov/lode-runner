@@ -44,6 +44,9 @@ export class Player {
         // Death
         this.deathTimer = 0;
 
+        // Buffered dig input (captured when pressed, consumed when at tile position)
+        this.pendingDigDirection = 0;
+
         // Movement interpolation
         this.moving = false;
         this.moveProgress = 0;
@@ -76,6 +79,11 @@ export class Player {
     // Update position based on input
     update(dt, inputMove, digDirection) {
         this.animTime += dt;
+
+        // Buffer dig input when pressed (will be consumed when at tile position)
+        if (digDirection !== 0) {
+            this.pendingDigDirection = digDirection;
+        }
 
         // Update invincibility
         if (this.invincibleTimer > 0) {
@@ -122,10 +130,13 @@ export class Player {
             return;
         }
 
-        // Check for digging
-        if (digDirection !== 0) {
-            this.tryDig(digDirection);
-            return;
+        // Check for digging (use buffered input)
+        if (this.pendingDigDirection !== 0) {
+            this.tryDig(this.pendingDigDirection);
+            this.pendingDigDirection = 0;  // Clear buffer after attempt
+            if (this.state === PLAYER_STATES.DIGGING) {
+                return;  // Only return if dig succeeded
+            }
         }
 
         // Check for climbing
@@ -182,10 +193,13 @@ export class Player {
         // Check for gold collection
         this.checkGoldCollection();
 
-        // Check for digging
-        if (digDirection !== 0) {
-            this.tryDig(digDirection);
-            return;
+        // Check for digging (use buffered input)
+        if (this.pendingDigDirection !== 0) {
+            this.tryDig(this.pendingDigDirection);
+            this.pendingDigDirection = 0;  // Clear buffer after attempt
+            if (this.state === PLAYER_STATES.DIGGING) {
+                return;  // Only return if dig succeeded
+            }
         }
 
         // Check for climbing
