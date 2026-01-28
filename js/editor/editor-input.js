@@ -30,7 +30,7 @@ export class EditorInput {
         // Mouse events
         canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
         canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
+        window.addEventListener('mouseup', (e) => this.onMouseUp(e));
         canvas.addEventListener('mouseleave', (e) => this.onMouseLeave(e));
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -73,10 +73,10 @@ export class EditorInput {
     }
 
     onMouseUp(e) {
-        if (e.button === 0) {
+        if (e.button === 0 && this.mouseDown) {
             this.mouseDown = false;
             this.mouseReleased = true;
-        } else if (e.button === 2) {
+        } else if (e.button === 2 && this.rightMouseDown) {
             this.rightMouseDown = false;
         }
     }
