@@ -153,6 +153,14 @@ export class Editor {
 
     setSelectedTile(tileType) {
         this.selectedTile = tileType;
+
+        // Switch back to draw mode from non-drawing modes
+        if (this.currentTool === EDITOR_TOOLS.ERASE ||
+            this.currentTool === EDITOR_TOOLS.PLAYER_SPAWN ||
+            this.currentTool === EDITOR_TOOLS.ENEMY_SPAWN) {
+            this.setTool(EDITOR_TOOLS.DRAW);
+        }
+
         if (this.ui) {
             this.ui.updatePalette();
             this.ui.updateStatusBar();
