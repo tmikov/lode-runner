@@ -5,13 +5,15 @@ import { Editor } from './editor/editor.js';
 import { renderer } from './renderer.js';
 import { input } from './input.js';
 import { audio } from './audio.js';
-import { BUILT_IN_LEVELS } from '../levels/index.js';
+import { BUILT_IN_LEVELS, getBuiltinLevelByNumber } from '../levels/index.js';
 import { GAME_STATES } from './config.js';
 
 let game = null;
 let editor = null;
 let lastTime = 0;
 let currentMode = 'menu'; // 'menu', 'game', 'editor', or 'playtest'
+let selectedLevelNumber = 1;
+let levelInputBuffer = '';
 
 // Initialize the game
 function init() {
@@ -57,7 +59,7 @@ function setupMenuHandlers() {
     if (playBtn) {
         playBtn.addEventListener('click', () => {
             hideMenu();
-            initGame();
+            initGame(null, selectedLevelNumber);
         });
     }
 
@@ -66,6 +68,65 @@ function setupMenuHandlers() {
             hideMenu();
             initEditor();
         });
+    }
+
+    // Add keyboard listener for level selection on menu
+    document.addEventListener('keydown', handleMenuKeyInput);
+}
+
+// Handle keyboard input on menu for level selection
+function handleMenuKeyInput(e) {
+    if (currentMode !== 'menu') return;
+
+    const key = e.key;
+
+    // Handle digit keys (0-9)
+    if (/^[0-9]$/.test(key)) {
+        levelInputBuffer += key;
+        // Keep only last 3 digits
+        if (levelInputBuffer.length > 3) {
+            levelInputBuffer = levelInputBuffer.slice(-3);
+        }
+        const num = parseInt(levelInputBuffer, 10);
+        // Clamp to valid range
+        if (num >= 1 && num <= BUILT_IN_LEVELS.length) {
+            selectedLevelNumber = num;
+            updateLevelSelectDisplay();
+        } else if (num > BUILT_IN_LEVELS.length) {
+            // If typed number exceeds max, set to max
+            selectedLevelNumber = BUILT_IN_LEVELS.length;
+            levelInputBuffer = String(BUILT_IN_LEVELS.length);
+            updateLevelSelectDisplay();
+        }
+        return;
+    }
+
+    // Handle backspace to clear input
+    if (key === 'Backspace') {
+        levelInputBuffer = '';
+        selectedLevelNumber = 1;
+        updateLevelSelectDisplay();
+        return;
+    }
+
+    // Handle Enter to start game
+    if (key === 'Enter') {
+        hideMenu();
+        initGame(null, selectedLevelNumber);
+        return;
+    }
+
+    // Reset input buffer on non-digit key (except special keys)
+    if (key.length === 1 && !/[0-9]/.test(key)) {
+        levelInputBuffer = '';
+    }
+}
+
+// Update level selection display
+function updateLevelSelectDisplay() {
+    const levelDisplay = document.getElementById('level-select-number');
+    if (levelDisplay) {
+        levelDisplay.textContent = selectedLevelNumber;
     }
 }
 
@@ -79,6 +140,11 @@ function showMenu() {
     if (menuOverlay) menuOverlay.classList.remove('hidden');
     if (gameUI) gameUI.classList.add('hidden');
     if (editorUI) editorUI.classList.add('hidden');
+
+    // Reset level selection
+    selectedLevelNumber = 1;
+    levelInputBuffer = '';
+    updateLevelSelectDisplay();
 }
 
 // Hide main menu
@@ -88,7 +154,7 @@ function hideMenu() {
 }
 
 // Initialize game mode
-function initGame(levelData = null) {
+function initGame(levelData = null, levelNumber = 1) {
     currentMode = 'game';
 
     // Hide editor UI if visible
@@ -99,10 +165,26 @@ function initGame(levelData = null) {
     const gameUI = document.getElementById('ui-overlay');
     if (gameUI) gameUI.classList.remove('hidden');
 
-    // Create game with level data or first built-in level
-    const defaultLevel = BUILT_IN_LEVELS.length > 0 ? BUILT_IN_LEVELS[0].data : null;
-    game = new Game(levelData || defaultLevel);
+    // Get level data from level number if not provided
+    let data = levelData;
+    if (!data && levelNumber >= 1 && levelNumber <= BUILT_IN_LEVELS.length) {
+        const builtinLevel = getBuiltinLevelByNumber(levelNumber);
+        if (builtinLevel) {
+            data = builtinLevel.data;
+        }
+    }
+
+    // Fallback to first level if no valid data
+    if (!data && BUILT_IN_LEVELS.length > 0) {
+        data = BUILT_IN_LEVELS[0].data;
+        levelNumber = 1;
+    }
+
+    game = new Game(data, levelNumber, BUILT_IN_LEVELS.length);
     game.init();
+
+    // Set up callback for loading next level
+    game.onLoadNextLevel = loadNextLevel;
 }
 
 // Initialize editor mode
@@ -129,9 +211,23 @@ function startPlaytest(levelData) {
     currentMode = 'playtest';
 
     // Create game with editor level
-    game = new Game(levelData);
+    game = new Game(levelData, 0, 0); // 0 indicates playtest mode
     game.init();
     game.playtestMode = true;
+}
+
+// Load next level (called by Game class on level complete)
+function loadNextLevel(nextLevelNumber, currentScore, currentLives) {
+    if (nextLevelNumber <= BUILT_IN_LEVELS.length) {
+        const builtinLevel = getBuiltinLevelByNumber(nextLevelNumber);
+        if (builtinLevel) {
+            game = new Game(builtinLevel.data, nextLevelNumber, BUILT_IN_LEVELS.length);
+            game.score = currentScore;
+            game.lives = currentLives;
+            game.init();
+            game.onLoadNextLevel = loadNextLevel;
+        }
+    }
 }
 
 // Main game loop
@@ -180,7 +276,7 @@ function gameLoop(currentTime) {
             if (input.wasPressed('RESTART')) {
                 // Retry playtest
                 const levelData = editor.storage.toLevelData(editor);
-                game = new Game(levelData);
+                game = new Game(levelData, 0, 0); // 0 indicates playtest mode
                 game.init();
                 game.playtestMode = true;
             } else {

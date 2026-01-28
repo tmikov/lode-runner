@@ -10,8 +10,10 @@ import { audio } from './audio.js';
 import { ANIMATIONS } from './sprites.js';
 
 export class Game {
-    constructor(levelData) {
+    constructor(levelData, levelNumber = 1, totalLevels = 1) {
         this.levelData = levelData;
+        this.currentLevelNumber = levelNumber;
+        this.totalLevels = totalLevels;
         this.level = null;
         this.player = null;
         this.enemies = [];
@@ -31,6 +33,9 @@ export class Game {
 
         // Gold animation tracking
         this.goldAnimTime = 0;
+
+        // Callback for loading next level (set by main.js)
+        this.onLoadNextLevel = null;
     }
 
     // Initialize the game
@@ -111,7 +116,7 @@ export class Game {
     updatePlaying(dt) {
         // Check for pause
         if (input.wasPressed('PAUSE')) {
-            this.setState(GAME_STATES.PAUSED, 'PAUSED');
+            this.setState(GAME_STATES.PAUSED, 'PAUSED - ESC=Resume, M=Menu');
             return;
         }
 
@@ -197,13 +202,31 @@ export class Game {
         if (input.wasPressed('PAUSE')) {
             this.setState(GAME_STATES.PLAYING);
         }
+        // Check for menu key while paused
+        if (input.isKeyPressed('KeyM')) {
+            this.goToMenu();
+        }
     }
 
     updateLevelComplete(dt) {
-        if (this.stateTimer > 3) {
-            // Could load next level here
-            // For now, just restart
-            this.setState(GAME_STATES.VICTORY, 'VICTORY! R=Replay, M=Menu');
+        if (this.stateTimer > 2) {
+            // Check if there's a next level
+            if (this.currentLevelNumber > 0 && this.currentLevelNumber < this.totalLevels) {
+                // Load next level via callback
+                if (this.onLoadNextLevel) {
+                    this.onLoadNextLevel(this.currentLevelNumber + 1, this.score, this.lives);
+                } else {
+                    // Fallback: just show victory
+                    this.setState(GAME_STATES.VICTORY, 'VICTORY! R=Replay, M=Menu');
+                }
+            } else {
+                // Final level complete or playtest mode
+                if (this.currentLevelNumber === this.totalLevels) {
+                    this.setState(GAME_STATES.VICTORY, 'ALL LEVELS COMPLETE! R=Replay, M=Menu');
+                } else {
+                    this.setState(GAME_STATES.VICTORY, 'VICTORY! R=Replay, M=Menu');
+                }
+            }
         }
     }
 
@@ -276,6 +299,10 @@ export class Game {
         document.getElementById('gold').textContent = this.level.collectedGold;
         document.getElementById('gold-total').textContent = this.level.goldCount;
         document.getElementById('lives').textContent = this.lives;
+        const levelEl = document.getElementById('level');
+        if (levelEl) {
+            levelEl.textContent = this.currentLevelNumber > 0 ? this.currentLevelNumber : '-';
+        }
     }
 
     // Main render function

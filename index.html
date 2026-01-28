@@ -12,6 +12,11 @@
         <div id="menu-overlay">
             <div id="menu-content">
                 <h1 id="menu-title">LODE RUNNER</h1>
+                <div id="level-select">
+                    <span id="level-select-label">LEVEL:</span>
+                    <span id="level-select-number">1</span>
+                    <span id="level-select-hint">(Type 1-150)</span>
+                </div>
                 <div id="menu-buttons">
                     <button id="btn-play">Play Game</button>
                     <button id="btn-editor">Level Editor</button>
@@ -21,6 +26,7 @@
 
         <canvas id="game-canvas"></canvas>
         <div id="ui-overlay">
+            <div id="level-display">LEVEL: <span id="level">1</span></div>
             <div id="score-display">SCORE: <span id="score">0</span></div>
             <div id="gold-display">GOLD: <span id="gold">0</span>/<span id="gold-total">0</span></div>
             <div id="lives-display">LIVES: <span id="lives">3</span></div>
