@@ -20,12 +20,14 @@ No build step, test suite, or linting setup. The project uses Bun.js only for th
 ### Entry Point
 - `index.html` loads Kontra.js from CDN and `js/main.js` as the entry module
 - `js/main.js` initializes the game loop using `requestAnimationFrame` with delta time capping
+- On load, shows menu screen with "Play Game" and "Level Editor" options
+- URL parameter `?editor=true` opens editor directly
 
 ### Core Modules
 
 | Module | Purpose |
 |--------|---------|
-| `game.js` | Game state machine (LOADING, PLAYING, PAUSED, LEVEL_COMPLETE, GAME_OVER, VICTORY) |
+| `game.js` | Game state machine (MENU, LOADING, PLAYING, PAUSED, LEVEL_COMPLETE, GAME_OVER, VICTORY) |
 | `player.js` | Player entity with state machine (IDLE, RUNNING, CLIMBING, BAR_TRAVERSE, FALLING, DIGGING, DEAD) |
 | `enemy.js` | Enemy AI with states (CHASING, CLIMBING, BAR_TRAVERSE, FALLING, TRAPPED, EMERGING, RESPAWNING) |
 | `pathfinding.js` | A* pathfinding for enemy chase behavior |
@@ -37,14 +39,26 @@ No build step, test suite, or linting setup. The project uses Bun.js only for th
 | `input.js` | Keyboard input handling |
 | `config.js` | Game constants (speeds, timing, scoring, key bindings) |
 
+### Editor Modules (js/editor/)
+
+| Module | Purpose |
+|--------|---------|
+| `editor.js` | Main editor class, coordinates all editor functionality |
+| `editor-ui.js` | UI management - toolbar, sidebar, modals, tile palette |
+| `editor-storage.js` | Save/load levels, localStorage, JSON/ASCII import/export |
+| `editor-renderer.js` | Editor-specific rendering (grid, hover, spawns) |
+| `editor-history.js` | Undo/redo system |
+| `editor-validator.js` | Level validation (player spawn, gold count, etc.) |
+
 ### World Structure
 - 28x16 tile grid at 2x scale (896x512 pixels)
 - Tile types: EMPTY, BRICK, SOLID, LADDER, ROPE, GOLD, HIDDEN_LADDER, EXIT, DUG_HOLE
 
 ### Levels
 - Located in `levels/` directory
+- `levels/index.js` exports `BUILT_IN_LEVELS` array for editor access
 - Defined as ASCII art strings parsed at load time
-- Character mapping: `.`=empty, `#`=brick, `@`=solid, `H`=ladder, `-`=rope, `$`=gold, `P`=player start, `E`=enemy start
+- Character mapping: `.`=empty, `#`=brick, `=`=solid, `H`=ladder, `-`=rope, `G`=gold, `h`=hidden ladder, `P`=player start, `E`=enemy start
 
 ## Key Configuration (config.js)
 
