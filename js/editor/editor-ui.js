@@ -124,12 +124,6 @@ export class EditorUI {
             builtinBtn.addEventListener('click', () => this.showBuiltinModal());
         }
 
-        // ASCII export button
-        const asciiBtn = document.getElementById('btn-export-ascii');
-        if (asciiBtn) {
-            asciiBtn.addEventListener('click', () => this.showAsciiModal());
-        }
-
         // Test button
         const testBtn = document.getElementById('btn-test');
         if (testBtn) {
@@ -383,45 +377,6 @@ export class EditorUI {
                         this.updateUI();
                     }
                 });
-            });
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    showAsciiModal() {
-        const modal = document.getElementById('ascii-modal');
-        const output = document.getElementById('ascii-output');
-        const copyBtn = document.getElementById('btn-copy-ascii');
-
-        if (!modal || !output) return;
-
-        // Generate ASCII output
-        const ascii = this.editor.storage.exportAsAscii(this.editor);
-        output.value = ascii;
-
-        // Setup copy button
-        if (copyBtn) {
-            // Remove old listener by cloning
-            const newCopyBtn = copyBtn.cloneNode(true);
-            copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
-
-            newCopyBtn.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(ascii);
-                    newCopyBtn.textContent = 'Copied!';
-                    setTimeout(() => {
-                        newCopyBtn.textContent = 'Copy to Clipboard';
-                    }, 2000);
-                } catch (e) {
-                    // Fallback for older browsers
-                    output.select();
-                    document.execCommand('copy');
-                    newCopyBtn.textContent = 'Copied!';
-                    setTimeout(() => {
-                        newCopyBtn.textContent = 'Copy to Clipboard';
-                    }, 2000);
-                }
             });
         }
 

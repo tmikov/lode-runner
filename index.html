@@ -49,7 +49,6 @@
                     <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
                     <span class="toolbar-separator"></span>
                     <button id="btn-export" title="Export to File">Export</button>
-                    <button id="btn-export-ascii" title="Export as ASCII">ASCII</button>
                     <button id="btn-import" title="Import from File">Import</button>
                     <input type="file" id="import-file-input" accept=".json" style="display: none;">
                 </div>
@@ -155,22 +154,6 @@
                 </div>
                 <div class="modal-buttons">
                     <button type="button" class="modal-cancel">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ASCII Export Modal -->
-        <div id="ascii-modal" class="modal hidden">
-            <div class="modal-content modal-wide">
-                <div class="modal-header">
-                    <h2>Export as ASCII</h2>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <p class="modal-hint">Copy this ASCII level definition to use in a level file:</p>
-                <textarea id="ascii-output" readonly></textarea>
-                <div class="modal-buttons">
-                    <button type="button" id="btn-copy-ascii" class="btn-primary">Copy to Clipboard</button>
-                    <button type="button" class="modal-cancel">Close</button>
                 </div>
             </div>
         </div>

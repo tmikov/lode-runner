@@ -1,6 +1,7 @@
 // Editor save/load and storage management
 
 import { CONFIG, TILE_TYPES, EDITOR_CONFIG } from '../config.js';
+import { parseLevelFromLines } from '../level.js';
 
 // Character mapping for ASCII export (original Apple II Lode Runner format)
 const TILE_TO_CHAR = {
@@ -21,45 +22,62 @@ export class EditorStorage {
         this.autosaveTimer = 0;
     }
 
-    // Convert editor state to JSON-serializable format
+    // Convert editor state to ASCII array format (original Apple II Lode Runner format)
     exportLevel(editor) {
-        const tiles = [];
+        const lines = [];
+
         for (let y = 0; y < editor.level.height; y++) {
+            let line = '';
             for (let x = 0; x < editor.level.width; x++) {
-                tiles.push(editor.level.getTile(x, y));
+                // Check for player spawn at this position
+                if (editor.playerStart && editor.playerStart.x === x && editor.playerStart.y === y) {
+                    line += '&';
+                    continue;
+                }
+
+                // Check for enemy spawn at this position
+                const isEnemySpawn = editor.enemyStarts.some(e => e.x === x && e.y === y);
+                if (isEnemySpawn) {
+                    line += '0';
+                    continue;
+                }
+
+                // Get tile character
+                const tile = editor.level.getTile(x, y);
+                line += TILE_TO_CHAR[tile] || ' ';
             }
+            lines.push(line);
         }
 
         return {
             name: editor.levelName || 'Untitled Level',
-            width: editor.level.width,
-            height: editor.level.height,
-            tiles: tiles,
-            playerStart: editor.playerStart ? { ...editor.playerStart } : null,
-            enemyStarts: editor.enemyStarts.map(e => ({ ...e })),
+            lines: lines,
             createdAt: editor.createdAt || new Date().toISOString(),
             modifiedAt: new Date().toISOString()
         };
     }
 
-    // Import level data into editor
+    // Import level data into editor (from ASCII array format)
     importLevel(editor, data) {
         // Clear current level
         editor.clearLevel();
 
+        // Parse ASCII lines using the standard parser
+        const parsed = parseLevelFromLines(data.lines);
+
         // Set tiles
-        for (let y = 0; y < data.height; y++) {
-            for (let x = 0; x < data.width; x++) {
-                const index = y * data.width + x;
-                if (data.tiles[index] !== undefined) {
-                    editor.level.setTile(x, y, data.tiles[index]);
+        for (let y = 0; y < parsed.height; y++) {
+            for (let x = 0; x < parsed.width; x++) {
+                const index = y * parsed.width + x;
+                if (parsed.tiles[index] !== undefined) {
+                    editor.level.setTile(x, y, parsed.tiles[index]);
                 }
             }
         }
 
         // Set spawns
-        editor.playerStart = data.playerStart ? { ...data.playerStart } : null;
-        editor.enemyStarts = data.enemyStarts ? data.enemyStarts.map(e => ({ ...e })) : [];
+        editor.playerStart = parsed.playerStart ? { ...parsed.playerStart } : null;
+        editor.enemyStarts = parsed.enemyStarts ? parsed.enemyStarts.map(e => ({ ...e })) : [];
         editor.levelName = data.name || 'Untitled Level';
         editor.createdAt = data.createdAt || new Date().toISOString();
 
@@ -177,27 +195,17 @@ export class EditorStorage {
         });
     }
 
-    // Convert to level data format for game
+    // Convert to level data format for game (parse from ASCII format)
     toLevelData(editor) {
-        const tiles = [];
-        let goldCount = 0;
+        const data = this.exportLevel(editor);
+        const parsed = parseLevelFromLines(data.lines);
 
-        for (let y = 0; y < editor.level.height; y++) {
-            for (let x = 0; x < editor.level.width; x++) {
-                const tile = editor.level.getTile(x, y);
-                tiles.push(tile);
-                if (tile === TILE_TYPES.GOLD) goldCount++;
-            }
+        // Ensure player start has a default if not set
+        if (!parsed.playerStart || (parsed.playerStart.x === 0 && parsed.playerStart.y === 0 && !editor.playerStart)) {
+            parsed.playerStart = { x: 0, y: CONFIG.LEVEL_HEIGHT - 1 };
         }
 
-        return {
-            width: editor.level.width,
-            height: editor.level.height,
-            tiles: tiles,
-            playerStart: editor.playerStart ? { ...editor.playerStart } : { x: 0, y: CONFIG.LEVEL_HEIGHT - 1 },
-            enemyStarts: editor.enemyStarts.map(e => ({ ...e })),
-            goldCount: goldCount
-        };
+        return parsed;
     }
 
     // Sanitize level name for use as storage key
@@ -217,36 +225,6 @@ export class EditorStorage {
             this.autosave(editor);
             this.autosaveTimer = 0;
         }
-    }
-
-    // Export level as ASCII string (original Apple II Lode Runner format)
-    exportAsAscii(editor) {
-        const lines = [];
-
-        for (let y = 0; y < editor.level.height; y++) {
-            let line = '';
-            for (let x = 0; x < editor.level.width; x++) {
-                // Check for player spawn at this position
-                if (editor.playerStart && editor.playerStart.x === x && editor.playerStart.y === y) {
-                    line += '&';
-                    continue;
-                }
-
-                // Check for enemy spawn at this position
-                const isEnemySpawn = editor.enemyStarts.some(e => e.x === x && e.y === y);
-                if (isEnemySpawn) {
-                    line += '0';
-                    continue;
-                }
-
-                // Get tile character
-                const tile = editor.level.getTile(x, y);
-                line += TILE_TO_CHAR[tile] || ' ';
-            }
-            lines.push(line);
-        }
-
-        return lines.join('\n');
     }
 
     // Import a built-in level into the editor as a copy
