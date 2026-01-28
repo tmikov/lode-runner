@@ -11,7 +11,7 @@ import { GAME_STATES } from './config.js';
 let game = null;
 let editor = null;
 let lastTime = 0;
-let currentMode = 'game'; // 'game' or 'editor' or 'playtest'
+let currentMode = 'menu'; // 'menu', 'game', 'editor', or 'playtest'
 
 // Initialize the game
 function init() {
@@ -24,12 +24,17 @@ function init() {
     // Initialize audio
     audio.init();
 
-    // Check for editor mode via URL parameter
+    // Setup menu button handlers
+    setupMenuHandlers();
+
+    // Check for editor mode via URL parameter (for direct linking)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('editor') === 'true') {
+        hideMenu();
         initEditor();
     } else {
-        initGame();
+        // Show menu by default
+        showMenu();
     }
 
     // Start game loop
@@ -42,6 +47,44 @@ function init() {
     }, { once: true });
 
     console.log('Lode Runner initialized!');
+}
+
+// Setup menu button handlers
+function setupMenuHandlers() {
+    const playBtn = document.getElementById('btn-play');
+    const editorBtn = document.getElementById('btn-editor');
+
+    if (playBtn) {
+        playBtn.addEventListener('click', () => {
+            hideMenu();
+            initGame();
+        });
+    }
+
+    if (editorBtn) {
+        editorBtn.addEventListener('click', () => {
+            hideMenu();
+            initEditor();
+        });
+    }
+}
+
+// Show main menu
+function showMenu() {
+    currentMode = 'menu';
+    const menuOverlay = document.getElementById('menu-overlay');
+    const gameUI = document.getElementById('ui-overlay');
+    const editorUI = document.getElementById('editor-ui');
+
+    if (menuOverlay) menuOverlay.classList.remove('hidden');
+    if (gameUI) gameUI.classList.add('hidden');
+    if (editorUI) editorUI.classList.add('hidden');
+}
+
+// Hide main menu
+function hideMenu() {
+    const menuOverlay = document.getElementById('menu-overlay');
+    if (menuOverlay) menuOverlay.classList.add('hidden');
 }
 
 // Initialize game mode
@@ -67,9 +110,9 @@ function initEditor() {
 
     // Create editor with callbacks
     editor = new Editor(
-        // onExit callback
+        // onExit callback - return to menu
         () => {
-            initGame();
+            showMenu();
         },
         // onPlaytest callback
         (levelData) => {
@@ -96,7 +139,10 @@ function gameLoop(currentTime) {
     const dt = Math.min((currentTime - lastTime) / 1000, 0.1); // Cap at 100ms
     lastTime = currentTime;
 
-    if (currentMode === 'editor') {
+    if (currentMode === 'menu') {
+        // Menu mode - just render the canvas background
+        renderer.clear();
+    } else if (currentMode === 'editor') {
         // Editor update/render
         editor.update(dt);
         editor.render();
@@ -173,5 +219,6 @@ if (document.readyState === 'loading') {
 // Export for external access
 window.lodeRunner = {
     startEditor: initEditor,
-    startGame: initGame
+    startGame: initGame,
+    showMenu: showMenu
 };

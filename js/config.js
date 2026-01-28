@@ -88,6 +88,7 @@ export const ENEMY_STATES = {
 
 // Game state constants
 export const GAME_STATES = {
+    MENU: 'menu',
     LOADING: 'loading',
     PLAYING: 'playing',
     PAUSED: 'paused',

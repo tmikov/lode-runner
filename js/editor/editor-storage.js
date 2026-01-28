@@ -2,6 +2,19 @@
 
 import { CONFIG, TILE_TYPES, EDITOR_CONFIG } from '../config.js';
 
+// Character mapping for ASCII export (reverse of parseLevelString)
+const TILE_TO_CHAR = {
+    [TILE_TYPES.EMPTY]: '.',
+    [TILE_TYPES.BRICK]: '#',
+    [TILE_TYPES.SOLID]: '=',
+    [TILE_TYPES.LADDER]: 'H',
+    [TILE_TYPES.ROPE]: '-',
+    [TILE_TYPES.GOLD]: 'G',
+    [TILE_TYPES.HIDDEN_LADDER]: 'h',
+    [TILE_TYPES.EXIT]: '^',
+    [TILE_TYPES.DUG_HOLE]: '.'
+};
+
 export class EditorStorage {
     constructor() {
         this.autosaveTimer = 0;
@@ -203,5 +216,61 @@ export class EditorStorage {
             this.autosave(editor);
             this.autosaveTimer = 0;
         }
+    }
+
+    // Export level as ASCII string (matching level file format)
+    exportAsAscii(editor) {
+        const lines = [];
+
+        for (let y = 0; y < editor.level.height; y++) {
+            let line = '';
+            for (let x = 0; x < editor.level.width; x++) {
+                // Check for player spawn at this position
+                if (editor.playerStart && editor.playerStart.x === x && editor.playerStart.y === y) {
+                    line += 'P';
+                    continue;
+                }
+
+                // Check for enemy spawn at this position
+                const isEnemySpawn = editor.enemyStarts.some(e => e.x === x && e.y === y);
+                if (isEnemySpawn) {
+                    line += 'E';
+                    continue;
+                }
+
+                // Get tile character
+                const tile = editor.level.getTile(x, y);
+                line += TILE_TO_CHAR[tile] || '.';
+            }
+            lines.push(line);
+        }
+
+        return lines.join('\n');
+    }
+
+    // Import a built-in level into the editor as a copy
+    importBuiltinLevel(editor, levelData) {
+        // Clear current level
+        editor.clearLevel();
+
+        // Set tiles
+        for (let y = 0; y < levelData.height; y++) {
+            for (let x = 0; x < levelData.width; x++) {
+                const index = y * levelData.width + x;
+                if (levelData.tiles[index] !== undefined) {
+                    editor.level.setTile(x, y, levelData.tiles[index]);
+                }
+            }
+        }
+
+        // Set spawns
+        editor.playerStart = levelData.playerStart ? { ...levelData.playerStart } : null;
+        editor.enemyStarts = levelData.enemyStarts ? levelData.enemyStarts.map(e => ({ ...e })) : [];
+        editor.levelName = (levelData.name || 'Built-in Level') + ' (Copy)';
+        editor.createdAt = new Date().toISOString();
+
+        editor.history.clear();
+        // Mark as unsaved since it's a copy
+        editor.unsavedChanges = true;
     }
 }

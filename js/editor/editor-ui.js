@@ -1,6 +1,7 @@
 // Editor UI management - tile palette, toolbar, status bar
 
 import { TILE_TYPES, EDITOR_TOOLS, CONFIG } from '../config.js';
+import { BUILT_IN_LEVELS } from '../../levels/index.js';
 
 // Tile definitions for the palette
 const PALETTE_TILES = [
@@ -114,6 +115,18 @@ export class EditorUI {
                     e.target.value = '';
                 }
             });
+        }
+
+        // Built-in levels button
+        const builtinBtn = document.getElementById('btn-builtin');
+        if (builtinBtn) {
+            builtinBtn.addEventListener('click', () => this.showBuiltinModal());
+        }
+
+        // ASCII export button
+        const asciiBtn = document.getElementById('btn-export-ascii');
+        if (asciiBtn) {
+            asciiBtn.addEventListener('click', () => this.showAsciiModal());
         }
 
         // Test button
@@ -328,6 +341,88 @@ export class EditorUI {
     hideModal(id) {
         const modal = document.getElementById(id);
         if (modal) modal.classList.add('hidden');
+    }
+
+    showBuiltinModal() {
+        const modal = document.getElementById('builtin-modal');
+        const list = document.getElementById('builtin-list');
+        if (!modal || !list) return;
+
+        // Populate built-in level list
+        list.innerHTML = '';
+
+        if (BUILT_IN_LEVELS.length === 0) {
+            list.innerHTML = '<p class="no-levels">No built-in levels available</p>';
+        } else {
+            BUILT_IN_LEVELS.forEach(level => {
+                const item = document.createElement('div');
+                item.className = 'level-list-item';
+                item.innerHTML = `
+                    <span class="level-name">${level.name}</span>
+                    <button class="btn-load-level" data-id="${level.id}">Load</button>
+                `;
+                list.appendChild(item);
+            });
+
+            // Add event listeners for load buttons
+            list.querySelectorAll('.btn-load-level').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const levelId = btn.dataset.id;
+                    const level = BUILT_IN_LEVELS.find(l => l.id === levelId);
+                    if (level) {
+                        if (this.editor.unsavedChanges) {
+                            if (!confirm('You have unsaved changes. Load built-in level anyway?')) {
+                                return;
+                            }
+                        }
+                        this.editor.storage.importBuiltinLevel(this.editor, level.data);
+                        this.hideModal('builtin-modal');
+                        this.updateUI();
+                    }
+                });
+            });
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    showAsciiModal() {
+        const modal = document.getElementById('ascii-modal');
+        const output = document.getElementById('ascii-output');
+        const copyBtn = document.getElementById('btn-copy-ascii');
+
+        if (!modal || !output) return;
+
+        // Generate ASCII output
+        const ascii = this.editor.storage.exportAsAscii(this.editor);
+        output.value = ascii;
+
+        // Setup copy button
+        if (copyBtn) {
+            // Remove old listener by cloning
+            const newCopyBtn = copyBtn.cloneNode(true);
+            copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+
+            newCopyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(ascii);
+                    newCopyBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        newCopyBtn.textContent = 'Copy to Clipboard';
+                    }, 2000);
+                } catch (e) {
+                    // Fallback for older browsers
+                    output.select();
+                    document.execCommand('copy');
+                    newCopyBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        newCopyBtn.textContent = 'Copy to Clipboard';
+                    }, 2000);
+                }
+            });
+        }
+
+        modal.classList.remove('hidden');
     }
 
     confirmNew() {

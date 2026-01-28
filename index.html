@@ -8,6 +8,17 @@
 </head>
 <body>
     <div id="game-container">
+        <!-- Main Menu -->
+        <div id="menu-overlay">
+            <div id="menu-content">
+                <h1 id="menu-title">LODE RUNNER</h1>
+                <div id="menu-buttons">
+                    <button id="btn-play">Play Game</button>
+                    <button id="btn-editor">Level Editor</button>
+                </div>
+            </div>
+        </div>
+
         <canvas id="game-canvas"></canvas>
         <div id="ui-overlay">
             <div id="score-display">SCORE: <span id="score">0</span></div>
@@ -26,11 +37,13 @@
                     <button id="btn-new" title="New Level">New</button>
                     <button id="btn-save" title="Save Level (Ctrl+S)">Save</button>
                     <button id="btn-load" title="Load Level">Load</button>
+                    <button id="btn-builtin" title="Load Built-in Level">Built-in</button>
                     <span class="toolbar-separator"></span>
                     <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
                     <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
                     <span class="toolbar-separator"></span>
                     <button id="btn-export" title="Export to File">Export</button>
+                    <button id="btn-export-ascii" title="Export as ASCII">ASCII</button>
                     <button id="btn-import" title="Import from File">Import</button>
                     <input type="file" id="import-file-input" accept=".json" style="display: none;">
                 </div>
@@ -120,6 +133,38 @@
                 </div>
                 <div class="modal-buttons">
                     <button type="button" class="modal-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Built-in Levels Modal -->
+        <div id="builtin-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Load Built-in Level</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div id="builtin-list" class="level-list">
+                    <!-- Built-in level items will be inserted here -->
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="modal-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ASCII Export Modal -->
+        <div id="ascii-modal" class="modal hidden">
+            <div class="modal-content modal-wide">
+                <div class="modal-header">
+                    <h2>Export as ASCII</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <p class="modal-hint">Copy this ASCII level definition to use in a level file:</p>
+                <textarea id="ascii-output" readonly></textarea>
+                <div class="modal-buttons">
+                    <button type="button" id="btn-copy-ascii" class="btn-primary">Copy to Clipboard</button>
+                    <button type="button" class="modal-cancel">Close</button>
                 </div>
             </div>
         </div>

@@ -65,6 +65,11 @@ class InputManager {
         return keyCodes.some(code => this.keysReleased[code]);
     }
 
+    // Check if a specific key code was just pressed (for one-off keys like M)
+    isKeyPressed(code) {
+        return this.keysPressed[code] === true;
+    }
+
     // Get movement direction from input
     getMovement() {
         let dx = 0;

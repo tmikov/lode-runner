@@ -184,7 +184,7 @@ export class Game {
             this.updateUI();
 
             if (this.lives <= 0) {
-                this.setState(GAME_STATES.GAME_OVER, 'GAME OVER - Press R to retry');
+                this.setState(GAME_STATES.GAME_OVER, 'GAME OVER - R=Retry, M=Menu');
                 audio.playGameOver();
             } else {
                 this.resetLevel();
@@ -203,7 +203,7 @@ export class Game {
         if (this.stateTimer > 3) {
             // Could load next level here
             // For now, just restart
-            this.setState(GAME_STATES.VICTORY, 'VICTORY! Press R to play again');
+            this.setState(GAME_STATES.VICTORY, 'VICTORY! R=Replay, M=Menu');
         }
     }
 
@@ -215,6 +215,10 @@ export class Game {
             this.player.respawn();
             this.setState(GAME_STATES.PLAYING);
         }
+        // Check for menu key
+        if (input.isKeyPressed('KeyM')) {
+            this.goToMenu();
+        }
     }
 
     updateVictory(dt) {
@@ -224,6 +228,17 @@ export class Game {
             this.resetLevel();
             this.player.respawn();
             this.setState(GAME_STATES.PLAYING);
+        }
+        // Check for menu key
+        if (input.isKeyPressed('KeyM')) {
+            this.goToMenu();
+        }
+    }
+
+    // Go to main menu
+    goToMenu() {
+        if (window.lodeRunner && window.lodeRunner.showMenu) {
+            window.lodeRunner.showMenu();
         }
     }
 
