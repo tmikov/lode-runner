@@ -17,6 +17,112 @@
         <div id="message-overlay" class="hidden">
             <div id="message-text"></div>
         </div>
+
+        <!-- Editor UI -->
+        <div id="editor-ui" class="hidden">
+            <!-- Toolbar -->
+            <div id="editor-toolbar">
+                <div class="toolbar-group">
+                    <button id="btn-new" title="New Level">New</button>
+                    <button id="btn-save" title="Save Level (Ctrl+S)">Save</button>
+                    <button id="btn-load" title="Load Level">Load</button>
+                    <span class="toolbar-separator"></span>
+                    <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+                    <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
+                    <span class="toolbar-separator"></span>
+                    <button id="btn-export" title="Export to File">Export</button>
+                    <button id="btn-import" title="Import from File">Import</button>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                </div>
+                <div class="toolbar-group toolbar-center">
+                    <span id="editor-title">Untitled Level</span>
+                </div>
+                <div class="toolbar-group">
+                    <button id="btn-test" title="Playtest Level">Test</button>
+                    <button id="btn-exit" title="Exit Editor">Exit</button>
+                </div>
+            </div>
+
+            <!-- Sidebar and Canvas Container -->
+            <div id="editor-main">
+                <!-- Left Sidebar -->
+                <div id="editor-sidebar">
+                    <div class="sidebar-section">
+                        <h3>Tools</h3>
+                        <div class="tool-buttons">
+                            <button data-tool="draw" class="active" title="Draw Tool">Draw</button>
+                            <button data-tool="erase" title="Erase Tool">Erase</button>
+                            <button data-tool="fill" title="Flood Fill Tool">Fill</button>
+                            <button data-tool="rectangle" title="Rectangle Tool">Rect</button>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Tiles</h3>
+                        <div id="tile-palette"></div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Spawns</h3>
+                        <div class="spawn-buttons">
+                            <button id="btn-player-spawn" title="Place Player Start">Player</button>
+                            <button id="btn-enemy-spawn" title="Toggle Enemy Spawn">Enemy</button>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>View</h3>
+                        <div class="view-buttons">
+                            <button id="btn-grid" class="active" title="Toggle Grid (G)">Grid</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canvas area - empty, canvas shows through -->
+                <div id="editor-canvas-area"></div>
+            </div>
+
+            <!-- Status Bar -->
+            <div id="editor-status">
+                <span id="status-tool">Tool: Draw</span>
+                <span id="status-tile">Tile: Brick</span>
+                <span id="status-warning" class="status-warning"></span>
+            </div>
+        </div>
+
+        <!-- Save Modal -->
+        <div id="save-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Save Level</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <form id="save-form">
+                    <label for="level-name-input">Level Name:</label>
+                    <input type="text" id="level-name-input" placeholder="Enter level name" required>
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn-primary">Save</button>
+                        <button type="button" class="modal-cancel">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Load Modal -->
+        <div id="load-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Load Level</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div id="level-list" class="level-list">
+                    <!-- Level items will be inserted here -->
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="modal-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/kontra/kontra.min.js"></script>

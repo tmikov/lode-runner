@@ -93,7 +93,33 @@ export const GAME_STATES = {
     PAUSED: 'paused',
     LEVEL_COMPLETE: 'level_complete',
     GAME_OVER: 'game_over',
-    VICTORY: 'victory'
+    VICTORY: 'victory',
+    EDITOR: 'editor',
+    PLAYTESTING: 'playtesting'
+};
+
+// Editor configuration
+export const EDITOR_CONFIG = {
+    // Autosave interval in seconds
+    AUTOSAVE_INTERVAL: 30,
+    // Maximum undo history size
+    MAX_HISTORY: 50,
+    // Maximum tiles for flood fill
+    MAX_FLOOD_FILL: 200,
+    // Grid line color
+    GRID_COLOR: 'rgba(255, 255, 255, 0.2)',
+    // Hover highlight color
+    HOVER_COLOR: 'rgba(255, 255, 255, 0.3)',
+    // Selection color
+    SELECTION_COLOR: 'rgba(100, 200, 255, 0.4)',
+    // Player spawn marker color
+    PLAYER_SPAWN_COLOR: '#00FF00',
+    // Enemy spawn marker color
+    ENEMY_SPAWN_COLOR: '#FF4444',
+    // Storage key prefix
+    STORAGE_PREFIX: 'loderunner_editor_',
+    // Autosave storage key
+    AUTOSAVE_KEY: 'loderunner_editor_autosave'
 };
 
 // Direction constants
@@ -115,4 +141,14 @@ export const KEYS = {
     DIG_RIGHT: ['KeyX', 'KeyE'],
     PAUSE: ['KeyP', 'Escape'],
     RESTART: ['KeyR']
+};
+
+// Editor tool types
+export const EDITOR_TOOLS = {
+    DRAW: 'draw',
+    ERASE: 'erase',
+    FILL: 'fill',
+    RECTANGLE: 'rectangle',
+    PLAYER_SPAWN: 'player_spawn',
+    ENEMY_SPAWN: 'enemy_spawn'
 };

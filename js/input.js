@@ -13,6 +13,11 @@ class InputManager {
 
     setupListeners() {
         window.addEventListener('keydown', (e) => {
+            // Don't capture keys when typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
             if (!this.keys[e.code]) {
                 this.keysPressed[e.code] = true;
             }

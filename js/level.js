@@ -154,6 +154,42 @@ export class Level {
         this.laddersRevealed = false;
     }
 
+    // Clear all tiles to empty (for editor)
+    clearAll() {
+        for (let i = 0; i < this.tiles.length; i++) {
+            this.tiles[i] = TILE_TYPES.EMPTY;
+        }
+        this.dugHoles.clear();
+        this.occupiedHoles.clear();
+        this.collectedGold = 0;
+        this.goldCount = 0;
+        this.laddersRevealed = false;
+    }
+
+    // Recalculate gold count (for editor)
+    recalculateGoldCount() {
+        let count = 0;
+        for (let i = 0; i < this.tiles.length; i++) {
+            if (this.tiles[i] === TILE_TYPES.GOLD) {
+                count++;
+            }
+        }
+        this.goldCount = count;
+        return count;
+    }
+
+    // Export level to JSON format (for editor)
+    exportToJSON() {
+        return {
+            width: this.width,
+            height: this.height,
+            tiles: [...this.tiles],
+            playerStart: { ...this.playerStart },
+            enemyStarts: this.enemyStarts.map(e => ({ ...e })),
+            goldCount: this.recalculateGoldCount()
+        };
+    }
+
     // Mark a hole as occupied by an enemy
     occupyHole(x, y) {
         this.occupiedHoles.add(`${x},${y}`);
