@@ -154,6 +154,12 @@ export class Player {
             return;
         }
 
+        // Check for dropping from rope
+        if (inputMove.dy > 0 && isHangable(currentTile)) {
+            this.setState(PLAYER_STATES.FALLING);
+            return;
+        }
+
         // Check for horizontal movement
         if (inputMove.dx !== 0) {
             this.facingRight = inputMove.dx > 0;
@@ -215,15 +221,15 @@ export class Player {
             return;
         }
 
+        // Check if on rope - transition to bar traverse
+        if (isHangable(currentTile)) {
+            this.setState(PLAYER_STATES.BAR_TRAVERSE);
+            return;
+        }
+
         // Continue running or stop
         if (inputMove.dx !== 0) {
             this.facingRight = inputMove.dx > 0;
-
-            // Check if on rope
-            if (isHangable(currentTile)) {
-                this.setState(PLAYER_STATES.BAR_TRAVERSE);
-                return;
-            }
 
             if (!this.tryMoveHorizontal(inputMove.dx)) {
                 this.setState(PLAYER_STATES.IDLE);
@@ -373,8 +379,8 @@ export class Player {
             return;
         }
 
-        // Catch on rope
-        if (isHangable(currentTile)) {
+        // Catch on rope (only if we've fallen to a new tile, to avoid catching on the rope we just dropped from)
+        if (isHangable(currentTile) && newTileY > this.tileY) {
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(PLAYER_STATES.BAR_TRAVERSE);
