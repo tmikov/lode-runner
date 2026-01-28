@@ -2,17 +2,18 @@
 
 import { CONFIG, TILE_TYPES, EDITOR_CONFIG } from '../config.js';
 
-// Character mapping for ASCII export (reverse of parseLevelString)
+// Character mapping for ASCII export (original Apple II Lode Runner format)
 const TILE_TO_CHAR = {
-    [TILE_TYPES.EMPTY]: '.',
+    [TILE_TYPES.EMPTY]: ' ',
     [TILE_TYPES.BRICK]: '#',
-    [TILE_TYPES.SOLID]: '=',
+    [TILE_TYPES.SOLID]: '@',
     [TILE_TYPES.LADDER]: 'H',
     [TILE_TYPES.ROPE]: '-',
-    [TILE_TYPES.GOLD]: 'G',
-    [TILE_TYPES.HIDDEN_LADDER]: 'h',
+    [TILE_TYPES.GOLD]: '$',
+    [TILE_TYPES.HIDDEN_LADDER]: 'S',
+    [TILE_TYPES.TRAP_DOOR]: 'X',
     [TILE_TYPES.EXIT]: '^',
-    [TILE_TYPES.DUG_HOLE]: '.'
+    [TILE_TYPES.DUG_HOLE]: ' '
 };
 
 export class EditorStorage {
@@ -218,7 +219,7 @@ export class EditorStorage {
         }
     }
 
-    // Export level as ASCII string (matching level file format)
+    // Export level as ASCII string (original Apple II Lode Runner format)
     exportAsAscii(editor) {
         const lines = [];
 
@@ -227,20 +228,20 @@ export class EditorStorage {
             for (let x = 0; x < editor.level.width; x++) {
                 // Check for player spawn at this position
                 if (editor.playerStart && editor.playerStart.x === x && editor.playerStart.y === y) {
-                    line += 'P';
+                    line += '&';
                     continue;
                 }
 
                 // Check for enemy spawn at this position
                 const isEnemySpawn = editor.enemyStarts.some(e => e.x === x && e.y === y);
                 if (isEnemySpawn) {
-                    line += 'E';
+                    line += '0';
                     continue;
                 }
 
                 // Get tile character
                 const tile = editor.level.getTile(x, y);
-                line += TILE_TO_CHAR[tile] || '.';
+                line += TILE_TO_CHAR[tile] || ' ';
             }
             lines.push(line);
         }

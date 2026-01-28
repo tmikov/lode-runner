@@ -16,6 +16,7 @@ export class Level {
         this.dugHoles = new Map(); // key: "x,y", value: DugHole
         this.occupiedHoles = new Set(); // holes with enemies in them
         this.laddersRevealed = false;
+        this.revealedTraps = new Set(); // Track revealed trap doors
         console.log(`Level loaded: ${this.width}x${this.height}, ${this.goldCount} gold pieces`);
     }
 
@@ -152,6 +153,17 @@ export class Level {
         this.dugHoles.clear();
         this.occupiedHoles.clear();
         this.laddersRevealed = false;
+        this.revealedTraps.clear();
+    }
+
+    // Reveal a trap door at position
+    revealTrap(x, y) {
+        this.revealedTraps.add(`${x},${y}`);
+    }
+
+    // Check if a trap door has been revealed
+    isTrapRevealed(x, y) {
+        return this.revealedTraps.has(`${x},${y}`);
     }
 
     // Clear all tiles to empty (for editor)
@@ -161,6 +173,7 @@ export class Level {
         }
         this.dugHoles.clear();
         this.occupiedHoles.clear();
+        this.revealedTraps.clear();
         this.collectedGold = 0;
         this.goldCount = 0;
         this.laddersRevealed = false;
@@ -256,9 +269,8 @@ export class Level {
     }
 }
 
-// Parse a level from string format
-export function parseLevelString(levelString, levelMeta = {}) {
-    const lines = levelString.trim().split('\n');
+// Parse a level from an array of line strings
+export function parseLevelFromLines(lines, levelMeta = {}) {
     const height = lines.length;
     const width = lines[0].length;
 
@@ -267,33 +279,44 @@ export function parseLevelString(levelString, levelMeta = {}) {
     let playerStart = { x: 0, y: 0 };
     let goldCount = 0;
 
+    // Character mapping supports both original Apple II format and current format
     const charToTile = {
-        '.': TILE_TYPES.EMPTY,
-        '#': TILE_TYPES.BRICK,
-        '=': TILE_TYPES.SOLID,
-        'H': TILE_TYPES.LADDER,
-        '-': TILE_TYPES.ROPE,
-        'G': TILE_TYPES.GOLD,
-        'h': TILE_TYPES.HIDDEN_LADDER,
-        '^': TILE_TYPES.EXIT,
-        ' ': TILE_TYPES.EMPTY,
+        ' ': TILE_TYPES.EMPTY,      // Original format: space = empty
+        '.': TILE_TYPES.EMPTY,      // Current format: dot = empty
+        '#': TILE_TYPES.BRICK,      // Both: # = brick
+        '@': TILE_TYPES.SOLID,      // Original format: @ = solid
+        '=': TILE_TYPES.SOLID,      // Current format: = = solid
+        'H': TILE_TYPES.LADDER,     // Both: H = ladder
+        '-': TILE_TYPES.ROPE,       // Both: - = rope
+        '$': TILE_TYPES.GOLD,       // Original format: $ = gold
+        'G': TILE_TYPES.GOLD,       // Current format: G = gold
+        'S': TILE_TYPES.HIDDEN_LADDER, // Original format: S = hidden ladder
+        'h': TILE_TYPES.HIDDEN_LADDER, // Current format: h = hidden ladder
+        'X': TILE_TYPES.TRAP_DOOR,  // Original format: X = trap door
+        '^': TILE_TYPES.EXIT,       // Both: ^ = exit
     };
 
     for (let y = 0; y < height; y++) {
         const line = lines[y];
         for (let x = 0; x < width; x++) {
-            const char = line[x] || '.';
+            const char = line[x] || ' ';
 
-            if (char === 'P') {
+            // Handle player spawn (both formats)
+            if (char === 'P' || char === '&') {
                 playerStart = { x, y };
                 tiles.push(TILE_TYPES.EMPTY);
-            } else if (char === 'E') {
+            }
+            // Handle enemy spawn (both formats)
+            else if (char === 'E' || char === '0') {
                 enemyStarts.push({ x, y });
                 tiles.push(TILE_TYPES.EMPTY);
-            } else if (char === 'G') {
+            }
+            // Handle gold (both formats)
+            else if (char === 'G' || char === '$') {
                 goldCount++;
                 tiles.push(TILE_TYPES.GOLD);
-            } else {
+            }
+            else {
                 tiles.push(charToTile[char] !== undefined ? charToTile[char] : TILE_TYPES.EMPTY);
             }
         }
@@ -308,4 +331,10 @@ export function parseLevelString(levelString, levelMeta = {}) {
         goldCount,
         ...levelMeta
     };
+}
+
+// Parse a level from string format (for backwards compatibility)
+export function parseLevelString(levelString, levelMeta = {}) {
+    const lines = levelString.trim().split('\n');
+    return parseLevelFromLines(lines, levelMeta);
 }

@@ -425,6 +425,12 @@ export class Player {
         const currentTile = this.level.getTile(this.tileX, this.tileY);
         const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
 
+        // Check for trap door - if standing on unrevealed trap, reveal it and fall
+        if (currentTile === TILE_TYPES.TRAP_DOOR && !this.level.isTrapRevealed(this.tileX, this.tileY)) {
+            this.level.revealTrap(this.tileX, this.tileY);
+            return false; // No support, player falls
+        }
+
         // On solid ground (includes filled holes)
         if (this.level.isSolidAt(this.tileX, this.tileY + 1)) return true;
 

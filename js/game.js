@@ -374,6 +374,15 @@ export class Game {
                     continue;
                 }
 
+                // Handle trap door - renders as brick until revealed, then empty
+                if (tile === TILE_TYPES.TRAP_DOOR) {
+                    if (!this.level.isTrapRevealed(x, y)) {
+                        renderer.drawSpriteAtTile('brick', x, y);
+                    }
+                    // Once revealed, don't render anything (empty)
+                    continue;
+                }
+
                 // Normal tile rendering
                 renderer.drawTile(tile, x, y, this.level.laddersRevealed);
             }

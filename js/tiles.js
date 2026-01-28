@@ -86,6 +86,16 @@ export const TILE_PROPERTIES = {
         fallThrough: true,
         sprite: 'empty',
         temporary: true
+    },
+    [TILE_TYPES.TRAP_DOOR]: {
+        solid: false,        // Not solid - player falls through
+        climbable: false,
+        hangable: false,
+        diggable: false,
+        collectible: false,
+        fallThrough: true,   // Falls through when revealed
+        sprite: 'brick',     // Looks like brick until revealed
+        isTrap: true
     }
 };
 

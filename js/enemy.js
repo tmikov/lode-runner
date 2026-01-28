@@ -446,6 +446,11 @@ export class Enemy {
         const currentTile = this.level.getTile(this.tileX, this.tileY);
         const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
 
+        // Check for revealed trap door - enemies fall through
+        if (currentTile === TILE_TYPES.TRAP_DOOR && this.level.isTrapRevealed(this.tileX, this.tileY)) {
+            return false;
+        }
+
         // Solid ground (includes filled holes)
         if (this.level.isSolidAt(this.tileX, this.tileY + 1)) return true;
         if (isClimbable(currentTile, this.level.laddersRevealed)) return true;

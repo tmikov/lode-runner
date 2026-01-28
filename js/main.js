@@ -5,7 +5,7 @@ import { Editor } from './editor/editor.js';
 import { renderer } from './renderer.js';
 import { input } from './input.js';
 import { audio } from './audio.js';
-import { LEVEL_1 } from '../levels/level1.js';
+import { BUILT_IN_LEVELS } from '../levels/index.js';
 import { GAME_STATES } from './config.js';
 
 let game = null;
@@ -99,8 +99,9 @@ function initGame(levelData = null) {
     const gameUI = document.getElementById('ui-overlay');
     if (gameUI) gameUI.classList.remove('hidden');
 
-    // Create game with level data or default level
-    game = new Game(levelData || LEVEL_1);
+    // Create game with level data or first built-in level
+    const defaultLevel = BUILT_IN_LEVELS.length > 0 ? BUILT_IN_LEVELS[0].data : null;
+    game = new Game(levelData || defaultLevel);
     game.init();
 }
 

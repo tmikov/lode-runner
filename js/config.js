@@ -61,7 +61,8 @@ export const TILE_TYPES = {
     GOLD: 5,
     HIDDEN_LADDER: 6,
     EXIT: 7,
-    DUG_HOLE: 8      // Temporary state for dug brick
+    DUG_HOLE: 8,     // Temporary state for dug brick
+    TRAP_DOOR: 9     // Looks like brick but player falls through
 };
 
 // Player state constants

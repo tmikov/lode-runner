@@ -11,7 +11,8 @@ const PALETTE_TILES = [
     { type: TILE_TYPES.LADDER, name: 'Ladder', key: '4' },
     { type: TILE_TYPES.ROPE, name: 'Rope', key: '5' },
     { type: TILE_TYPES.GOLD, name: 'Gold', key: '6' },
-    { type: TILE_TYPES.HIDDEN_LADDER, name: 'Hidden Ladder', key: '7' }
+    { type: TILE_TYPES.HIDDEN_LADDER, name: 'Hidden Ladder', key: '7' },
+    { type: TILE_TYPES.TRAP_DOOR, name: 'Trap Door', key: '8' }
 ];
 
 export class EditorUI {
@@ -225,7 +226,8 @@ export class EditorUI {
                 [TILE_TYPES.LADDER]: '#8B7355',
                 [TILE_TYPES.ROPE]: '#DAA520',
                 [TILE_TYPES.GOLD]: '#FFD700',
-                [TILE_TYPES.HIDDEN_LADDER]: '#4a4a4a'
+                [TILE_TYPES.HIDDEN_LADDER]: '#4a4a4a',
+                [TILE_TYPES.TRAP_DOOR]: '#8B4513'  // Same as brick (deceptive)
             };
             ctx.fillStyle = colors[tileType] || '#333';
             ctx.fillRect(2, 2, 28, 28);
@@ -239,7 +241,8 @@ export class EditorUI {
             [TILE_TYPES.LADDER]: 'ladder',
             [TILE_TYPES.ROPE]: 'rope',
             [TILE_TYPES.GOLD]: 'gold_1',
-            [TILE_TYPES.HIDDEN_LADDER]: 'ladder'
+            [TILE_TYPES.HIDDEN_LADDER]: 'ladder',
+            [TILE_TYPES.TRAP_DOOR]: 'brick'  // Looks like brick
         };
         return spriteNames[tileType];
     }
@@ -510,7 +513,8 @@ export class EditorUI {
                 [TILE_TYPES.LADDER]: 'Ladder',
                 [TILE_TYPES.ROPE]: 'Rope',
                 [TILE_TYPES.GOLD]: 'Gold',
-                [TILE_TYPES.HIDDEN_LADDER]: 'Hidden Ladder'
+                [TILE_TYPES.HIDDEN_LADDER]: 'Hidden Ladder',
+                [TILE_TYPES.TRAP_DOOR]: 'Trap Door'
             };
             tileDisplay.textContent = `Tile: ${tileNames[this.editor.selectedTile] || 'Unknown'}`;
         }

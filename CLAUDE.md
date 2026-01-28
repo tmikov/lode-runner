@@ -52,13 +52,15 @@ No build step, test suite, or linting setup. The project uses Bun.js only for th
 
 ### World Structure
 - 28x16 tile grid at 2x scale (896x512 pixels)
-- Tile types: EMPTY, BRICK, SOLID, LADDER, ROPE, GOLD, HIDDEN_LADDER, EXIT, DUG_HOLE
+- Tile types: EMPTY, BRICK, SOLID, LADDER, ROPE, GOLD, HIDDEN_LADDER, EXIT, DUG_HOLE, TRAP_DOOR
 
 ### Levels
 - Located in `levels/` directory
-- `levels/index.js` exports `BUILT_IN_LEVELS` array for editor access
-- Defined as ASCII art strings parsed at load time
-- Character mapping: `.`=empty, `#`=brick, `=`=solid, `H`=ladder, `-`=rope, `G`=gold, `h`=hidden ladder, `P`=player start, `E`=enemy start
+- `levels/original.json` contains all 150 original Lode Runner levels
+- `levels/index.js` parses and exports `BUILT_IN_LEVELS` array
+- Uses original Apple II Lode Runner format (also supports legacy format)
+- Character mapping (original format): ` `=empty, `#`=brick, `@`=solid, `H`=ladder, `-`=rope, `$`=gold, `S`=hidden ladder, `X`=trap door, `&`=player start, `0`=enemy start
+- Legacy format also supported: `.`=empty, `=`=solid, `G`=gold, `h`=hidden ladder, `P`=player, `E`=enemy
 
 ## Key Configuration (config.js)
 
