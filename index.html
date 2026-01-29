@@ -24,7 +24,26 @@
             </div>
         </div>
 
-        <canvas id="game-canvas"></canvas>
+        <div id="game-area">
+            <!-- Controls Panel -->
+            <div id="controls-panel">
+                <h3>CONTROLS</h3>
+                <div class="control-group">
+                    <div class="control-row"><span class="key">ARROWS</span> Move</div>
+                    <div class="control-row"><span class="key">WASD</span> Move</div>
+                </div>
+                <div class="control-group">
+                    <div class="control-row"><span class="key">Z / Q</span> Dig Left</div>
+                    <div class="control-row"><span class="key">X / E</span> Dig Right</div>
+                </div>
+                <div class="control-group">
+                    <div class="control-row"><span class="key">P / ESC</span> Pause</div>
+                    <div class="control-row"><span class="key">R</span> Restart</div>
+                </div>
+            </div>
+
+            <canvas id="game-canvas"></canvas>
+        </div>
         <div id="ui-overlay">
             <div id="level-display">LEVEL: <span id="level">1</span></div>
             <div id="score-display">SCORE: <span id="score">0</span></div>
