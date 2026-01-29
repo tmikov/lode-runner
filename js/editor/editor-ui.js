@@ -236,7 +236,7 @@ export class EditorUI {
             [TILE_TYPES.ROPE]: 'rope',
             [TILE_TYPES.GOLD]: 'gold_1',
             [TILE_TYPES.HIDDEN_LADDER]: 'ladder',
-            [TILE_TYPES.TRAP_DOOR]: 'brick'  // Looks like brick
+            [TILE_TYPES.TRAP_DOOR]: 'trap_revealed'
         };
         return spriteNames[tileType];
     }

@@ -401,12 +401,13 @@ export class Game {
                     continue;
                 }
 
-                // Handle trap door - renders as brick until revealed, then empty
+                // Handle trap door - renders as brick until revealed, then semi-transparent
                 if (tile === TILE_TYPES.TRAP_DOOR) {
-                    if (!this.level.isTrapRevealed(x, y)) {
+                    if (this.level.isTrapRevealed(x, y)) {
+                        renderer.drawSpriteAtTile('trap_revealed', x, y);
+                    } else {
                         renderer.drawSpriteAtTile('brick', x, y);
                     }
-                    // Once revealed, don't render anything (empty)
                     continue;
                 }
 

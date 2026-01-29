@@ -138,6 +138,12 @@ export class EditorRenderer {
                     continue;
                 }
 
+                // Handle trap door - show revealed sprite in editor
+                if (tile === TILE_TYPES.TRAP_DOOR) {
+                    this.renderer.drawSpriteAtTile('trap_revealed', x, y);
+                    continue;
+                }
+
                 this.renderer.drawTile(tile, x, y, false);
             }
         }

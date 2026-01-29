@@ -316,6 +316,10 @@ export function parseLevelFromLines(lines, levelMeta = {}) {
                 goldCount++;
                 tiles.push(TILE_TYPES.GOLD);
             }
+            // Handle trap door
+            else if (char === 'X') {
+                tiles.push(TILE_TYPES.TRAP_DOOR);
+            }
             else {
                 tiles.push(charToTile[char] !== undefined ? charToTile[char] : TILE_TYPES.EMPTY);
             }

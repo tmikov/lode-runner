@@ -135,8 +135,6 @@ export class Enemy {
         if (this.pathUpdateTimer <= 0 || this.path.length === 0) {
             this.updatePath(playerTileX, playerTileY);
             this.pathUpdateTimer = CONFIG.PATH_UPDATE_INTERVAL + (Math.random() - 0.5) * 0.2;
-            console.log(`Enemy at (${this.tileX}, ${this.tileY}) path to player (${playerTileX}, ${playerTileY}):`,
-                this.path.slice(0, 5).map(p => `(${p.x},${p.y})`).join(' -> '));
         }
 
         // Get next move from path
@@ -203,8 +201,6 @@ export class Enemy {
         if (this.pathUpdateTimer <= 0) {
             this.updatePath(playerTileX, playerTileY);
             this.pathUpdateTimer = CONFIG.PATH_UPDATE_INTERVAL;
-            console.log(`Enemy CLIMBING at (${this.tileX}, ${this.tileY}) path to player (${playerTileX}, ${playerTileY}):`,
-                this.path.slice(0, 5).map(p => `(${p.x},${p.y})`).join(' -> '));
         }
 
         const move = getNextMoveFromPath(this.path, this.tileX, this.tileY);
@@ -252,8 +248,6 @@ export class Enemy {
         if (this.pathUpdateTimer <= 0) {
             this.updatePath(playerTileX, playerTileY);
             this.pathUpdateTimer = CONFIG.PATH_UPDATE_INTERVAL;
-            console.log(`Enemy CLIMBING at (${this.tileX}, ${this.tileY}) path to player (${playerTileX}, ${playerTileY}):`,
-                this.path.slice(0, 5).map(p => `(${p.x},${p.y})`).join(' -> '));
         }
 
         const move = getNextMoveFromPath(this.path, this.tileX, this.tileY);
@@ -292,7 +286,6 @@ export class Enemy {
                 return;
             }
             // Fell into empty hole - get trapped
-            console.log(`Enemy trapped in hole at (${this.tileX}, ${newTileY})`);
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(ENEMY_STATES.TRAPPED);
@@ -337,7 +330,6 @@ export class Enemy {
         // Check if hole is regenerating with enemy in it
         if (this.level.isHoleRegenerating(this.tileX, this.tileY)) {
             // Enemy dies, will respawn
-            console.log(`Enemy dying in hole at (${this.tileX}, ${this.tileY})`);
             this.level.vacateHole(this.trappedX, this.trappedY);
             this.setState(ENEMY_STATES.RESPAWNING);
             this.respawnTimer = CONFIG.ENEMY_RESPAWN_DELAY;
@@ -347,7 +339,6 @@ export class Enemy {
 
         if (this.trapTimer <= 0) {
             // Climb out - store the target position
-            console.log(`Enemy emerging from trap at (${this.tileX}, ${this.tileY}), timer expired`);
             this.emergeTargetY = this.tileY - 1;
             this.path = []; // Clear old path so we recalculate after emerging
             this.pathUpdateTimer = 0;
@@ -380,9 +371,6 @@ export class Enemy {
                 const canGoLeft = !isSolid(leftTile) && leftBelowSafe;
                 const canGoRight = !isSolid(rightTile) && rightBelowSafe;
 
-                console.log(`Emerged at (${this.tileX}, ${this.tileY}), player at (${playerTileX}, ${playerTileY})`);
-                console.log(`  Left: canGo=${canGoLeft}, Right: canGo=${canGoRight}`);
-
                 // Set state first, then start movement (setState resets moving flag)
                 this.setState(ENEMY_STATES.CHASING);
 
@@ -395,27 +383,20 @@ export class Enemy {
                     if (playerIsLeft) {
                         this.startMovement(this.tileX - 1, this.tileY);
                         this.facingRight = false;
-                        console.log(`  Moving left towards player`);
                     } else {
                         this.startMovement(this.tileX + 1, this.tileY);
                         this.facingRight = true;
-                        console.log(`  Moving right towards player`);
                     }
                 } else if (canGoLeft) {
                     this.startMovement(this.tileX - 1, this.tileY);
                     this.facingRight = false;
-                    console.log(`  Moving left (only option)`);
                 } else if (canGoRight) {
                     this.startMovement(this.tileX + 1, this.tileY);
                     this.facingRight = true;
-                    console.log(`  Moving right (only option)`);
-                } else {
-                    console.log(`  No safe side! Will fall back in.`);
                 }
             }
         } else {
             // Can't emerge, tile above is solid - stay trapped and try again
-            console.log(`Cannot emerge at (${this.tileX}, ${this.tileY}), tile above (${this.tileX}, ${targetY}) = ${upTile} is solid`);
             this.setState(ENEMY_STATES.TRAPPED);
             this.trapTimer = 1.0;
         }
@@ -446,8 +427,8 @@ export class Enemy {
         const currentTile = this.level.getTile(this.tileX, this.tileY);
         const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
 
-        // Check for revealed trap door - enemies fall through
-        if (currentTile === TILE_TYPES.TRAP_DOOR && this.level.isTrapRevealed(this.tileX, this.tileY)) {
+        // Trap doors below don't provide support - enemy falls through
+        if (tileBelow === TILE_TYPES.TRAP_DOOR) {
             return false;
         }
 

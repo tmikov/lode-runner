@@ -762,6 +762,26 @@ SPRITES.gold_2 = processSprite([
     '0000000000000000',
 ]);
 
+// Revealed trap door - semi-transparent brick (checkerboard pattern)
+SPRITES.trap_revealed = processSprite([
+    'a0b0c0b0b0c0b0b0',
+    '0b0b0a0b0b0a0b0c',
+    'a0a0a0a0a0a0a0a0',
+    '0b0a0b0c0b0b0a0b',
+    'b0c0b0b0a0b0c0b0',
+    '0a0a0a0a0a0a0a0a',
+    'a0b0c0b0b0c0b0b0',
+    '0b0b0a0b0b0a0b0c',
+    'a0a0a0a0a0a0a0a0',
+    '0b0a0b0c0b0b0a0b',
+    'b0c0b0b0a0b0c0b0',
+    '0a0a0a0a0a0a0a0a',
+    'a0b0c0b0b0c0b0b0',
+    '0b0b0a0b0b0a0b0c',
+    'a0a0a0a0a0a0a0a0',
+    '0a0a0a0a0a0a0a0a',
+]);
+
 // Animation sequences
 export const ANIMATIONS = {
     player_run: ['player_run_1', 'player_run_2', 'player_run_3', 'player_run_4', 'player_run_3', 'player_run_2'],
