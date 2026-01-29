@@ -160,10 +160,16 @@ export class Enemy {
                 return;
             }
 
-            // Check if on rope
+            // Check if on rope - horizontal movement
             if (isHangable(currentTile) && move.dy === 0) {
                 this.setState(ENEMY_STATES.BAR_TRAVERSE);
                 this.tryMoveHorizontal(move.dx);
+                return;
+            }
+
+            // Check if on rope and need to drop
+            if (isHangable(currentTile) && move.dy > 0) {
+                this.setState(ENEMY_STATES.FALLING);
                 return;
             }
 
@@ -305,8 +311,8 @@ export class Enemy {
             return;
         }
 
-        // Catch on rope
-        if (isHangable(currentTile)) {
+        // Catch on rope (only if fallen to a new tile, to avoid catching on the rope we just dropped from)
+        if (isHangable(currentTile) && newTileY > this.tileY) {
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(ENEMY_STATES.BAR_TRAVERSE);
