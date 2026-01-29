@@ -125,14 +125,14 @@ export class Editor {
         const editorUI = document.getElementById('editor-ui');
         const gameUI = document.getElementById('ui-overlay');
         const canvas = document.getElementById('game-canvas');
-        const gameContainer = document.getElementById('game-container');
+        const gameArea = document.getElementById('game-area');
 
         if (editorUI) editorUI.classList.add('hidden');
         if (gameUI) gameUI.classList.remove('hidden');
 
-        // Move canvas back to game container
-        if (canvas && gameContainer) {
-            gameContainer.insertBefore(canvas, gameContainer.firstChild);
+        // Move canvas back to game-area (after controls panel)
+        if (canvas && gameArea) {
+            gameArea.appendChild(canvas);
         }
     }
 
