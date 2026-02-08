@@ -1,7 +1,10 @@
-// Player entity with state machine
+// Player entity with state machine — pixel-based movement
 
 import { CONFIG, PLAYER_STATES, TILE_TYPES, DIRECTIONS } from './config.js';
 import { isClimbable, isHangable, isSolid, isDiggable } from './tiles.js';
+
+const TILE = CONFIG.DISPLAY_TILE_SIZE;
+const HALF_TILE = TILE / 2;
 
 export class Player {
     constructor(level) {
@@ -11,16 +14,12 @@ export class Player {
 
     reset() {
         // Position (in pixels, center of player)
-        this.x = this.level.playerStart.x * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
-        this.y = this.level.playerStart.y * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
+        this.x = this.level.playerStart.x * TILE + HALF_TILE;
+        this.y = this.level.playerStart.y * TILE + HALF_TILE;
 
-        // Tile position (for collision)
+        // Tile position (derived from pixel pos, updated at end of each frame)
         this.tileX = this.level.playerStart.x;
         this.tileY = this.level.playerStart.y;
-
-        // Target tile for movement
-        this.targetX = this.tileX;
-        this.targetY = this.tileY;
 
         // State
         this.state = PLAYER_STATES.IDLE;
@@ -44,43 +43,81 @@ export class Player {
         // Death
         this.deathTimer = 0;
 
-        // Buffered dig input (captured when pressed, consumed when at tile position)
+        // Buffered dig input
         this.pendingDigDirection = 0;
-
-        // Movement interpolation
-        this.moving = false;
-        this.moveProgress = 0;
-        this.moveStartX = 0;
-        this.moveStartY = 0;
     }
 
-    // Get current tile position
-    getTilePos() {
-        return {
-            x: Math.floor(this.x / CONFIG.DISPLAY_TILE_SIZE),
-            y: Math.floor(this.y / CONFIG.DISPLAY_TILE_SIZE)
-        };
+    // --- Snap helpers ---
+
+    snapXToTile(tileCol) {
+        this.x = tileCol * TILE + HALF_TILE;
     }
 
-    // Align to tile center
+    snapYToTile(tileRow) {
+        this.y = tileRow * TILE + HALF_TILE;
+    }
+
+    // Align both axes to tile center
     alignToTile() {
-        this.x = this.tileX * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
-        this.y = this.tileY * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
+        this.x = this.tileX * TILE + HALF_TILE;
+        this.y = this.tileY * TILE + HALF_TILE;
     }
 
-    // Check if at tile center (for state transitions)
-    isAtTileCenter() {
-        const centerX = this.tileX * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
-        const centerY = this.tileY * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
-        const threshold = 2;
-        return Math.abs(this.x - centerX) < threshold && Math.abs(this.y - centerY) < threshold;
+    // --- Collision resolution helpers ---
+
+    // Resolve horizontal movement, clamping against solid tiles and world bounds.
+    // tileRow is the perpendicular-axis tile (the row the player is snapped to).
+    resolveHorizontalMovement(newX, direction, tileRow) {
+        // Clamp to world bounds
+        newX = Math.max(HALF_TILE, Math.min(newX, this.level.width * TILE - HALF_TILE));
+
+        if (direction > 0) {
+            // Moving right — check if right edge enters a solid column
+            const rightEdge = newX + HALF_TILE - 1;
+            const col = Math.floor(rightEdge / TILE);
+            if (isSolid(this.level.getTile(col, tileRow))) {
+                newX = col * TILE - HALF_TILE;
+            }
+        } else if (direction < 0) {
+            // Moving left — check if left edge enters a solid column
+            const leftEdge = newX - HALF_TILE;
+            const col = Math.floor(leftEdge / TILE);
+            if (isSolid(this.level.getTile(col, tileRow))) {
+                newX = (col + 1) * TILE + HALF_TILE;
+            }
+        }
+
+        return newX;
     }
 
-    // Update position based on input
+    // Resolve vertical movement, clamping against solid tiles.
+    // tileCol is the perpendicular-axis tile (the column the player is snapped to).
+    resolveVerticalMovement(newY, direction, tileCol) {
+        if (direction < 0) {
+            // Moving up — check if top edge enters a solid row
+            const topEdge = newY - HALF_TILE;
+            const row = Math.floor(topEdge / TILE);
+            if (isSolid(this.level.getTile(tileCol, row))) {
+                newY = (row + 1) * TILE + HALF_TILE;
+            }
+        } else if (direction > 0) {
+            // Moving down — check if bottom edge enters a solid row
+            const bottomEdge = newY + HALF_TILE - 1;
+            const row = Math.floor(bottomEdge / TILE);
+            if (isSolid(this.level.getTile(tileCol, row))) {
+                newY = row * TILE - HALF_TILE;
+            }
+        }
+
+        return newY;
+    }
+
+    // --- Main update ---
+
     update(dt, inputMove, digDirection) {
         this.animTime += dt;
 
-        // Buffer dig input when pressed (will be consumed when at tile position)
+        // Buffer dig input when pressed
         if (digDirection !== 0) {
             this.pendingDigDirection = digDirection;
         }
@@ -115,23 +152,30 @@ export class Player {
                 break;
         }
 
-        // Update tile position
-        this.tileX = Math.floor(this.x / CONFIG.DISPLAY_TILE_SIZE);
-        this.tileY = Math.floor(this.y / CONFIG.DISPLAY_TILE_SIZE);
+        // Update tile position from pixel position
+        this.tileX = Math.floor(this.x / TILE);
+        this.tileY = Math.floor(this.y / TILE);
 
-        // Reveal trap door if player passes through it (any direction)
+        // Reveal trap door if player passes through it
         const currentTile = this.level.getTile(this.tileX, this.tileY);
         if (currentTile === TILE_TYPES.TRAP_DOOR) {
             this.level.revealTrap(this.tileX, this.tileY);
         }
     }
 
-    updateIdle(dt, inputMove, digDirection) {
-        const currentTile = this.level.getTile(this.tileX, this.tileY);
-        const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
+    // --- State updates ---
 
-        // Check for falling
-        if (!this.hasSupport()) {
+    updateIdle(dt, inputMove, digDirection) {
+        const tx = Math.floor(this.x / TILE);
+        const ty = Math.floor(this.y / TILE);
+        const currentTile = this.level.getTile(tx, ty);
+        const tileBelow = this.level.getTile(tx, ty + 1);
+
+        // Trailing-edge fall check: use last facing direction so the player
+        // doesn't fall until the entire sprite clears the ledge.
+        const trailingEdge = this.facingRight ? this.x - HALF_TILE : this.x + HALF_TILE - 1;
+        const trailingTx = Math.floor(trailingEdge / TILE);
+        if (!this.hasSupportAt(trailingTx, ty)) {
             this.setState(PLAYER_STATES.FALLING);
             return;
         }
@@ -139,15 +183,16 @@ export class Player {
         // Check for digging (use buffered input)
         if (this.pendingDigDirection !== 0) {
             this.tryDig(this.pendingDigDirection);
-            this.pendingDigDirection = 0;  // Clear buffer after attempt
+            this.pendingDigDirection = 0;
             if (this.state === PLAYER_STATES.DIGGING) {
-                return;  // Only return if dig succeeded
+                return;
             }
         }
 
-        // Check for climbing
+        // Check for climbing (vertical input on climbable tile)
         if (inputMove.dy !== 0 && isClimbable(currentTile, this.level.laddersRevealed)) {
             this.setState(PLAYER_STATES.CLIMBING);
+            this.snapXToTile(tx);
             this.updateClimbing(dt, inputMove);
             return;
         }
@@ -155,8 +200,8 @@ export class Player {
         // Check for descending onto a ladder below
         if (inputMove.dy > 0 && isClimbable(tileBelow, this.level.laddersRevealed)) {
             this.setState(PLAYER_STATES.CLIMBING);
-            // Start moving down immediately
-            this.startMovement(this.tileX, this.tileY + 1);
+            this.snapXToTile(tx);
+            this.updateClimbing(dt, inputMove);
             return;
         }
 
@@ -177,30 +222,20 @@ export class Player {
                 return;
             }
 
-            // Try to move horizontally
-            if (this.tryMoveHorizontal(inputMove.dx)) {
-                this.setState(PLAYER_STATES.RUNNING);
-            }
+            // Transition to running and apply movement this frame
+            this.setState(PLAYER_STATES.RUNNING);
+            this.updateRunning(dt, inputMove, digDirection);
         }
     }
 
     updateRunning(dt, inputMove, digDirection) {
-        const currentTile = this.level.getTile(this.tileX, this.tileY);
+        const tx = Math.floor(this.x / TILE);
+        const ty = Math.floor(this.y / TILE);
 
-        // If moving, continue movement
-        if (this.moving) {
-            this.continueMovement(dt, CONFIG.PLAYER_SPEED);
-            return;
-        }
+        // Snap Y to tile row (keep player aligned vertically while running)
+        this.snapYToTile(ty);
 
-        // Arrived at target tile
-        this.alignToTile();
-
-        // Check for falling
-        if (!this.hasSupport()) {
-            this.setState(PLAYER_STATES.FALLING);
-            return;
-        }
+        const currentTile = this.level.getTile(tx, ty);
 
         // Check for gold collection
         this.checkGoldCollection();
@@ -208,68 +243,127 @@ export class Player {
         // Check for digging (use buffered input)
         if (this.pendingDigDirection !== 0) {
             this.tryDig(this.pendingDigDirection);
-            this.pendingDigDirection = 0;  // Clear buffer after attempt
+            this.pendingDigDirection = 0;
             if (this.state === PLAYER_STATES.DIGGING) {
-                return;  // Only return if dig succeeded
+                return;
             }
         }
 
         // Check for climbing
         if (inputMove.dy !== 0 && isClimbable(currentTile, this.level.laddersRevealed)) {
             this.setState(PLAYER_STATES.CLIMBING);
+            this.snapXToTile(tx);
             return;
         }
 
         // Check for descending onto a ladder below
-        const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
+        const tileBelow = this.level.getTile(tx, ty + 1);
         if (inputMove.dy > 0 && isClimbable(tileBelow, this.level.laddersRevealed)) {
             this.setState(PLAYER_STATES.CLIMBING);
+            this.snapXToTile(tx);
             return;
         }
 
-        // Check if on rope - transition to bar traverse
+        // Check if on rope
         if (isHangable(currentTile)) {
             this.setState(PLAYER_STATES.BAR_TRAVERSE);
             return;
         }
 
-        // Continue running or stop
-        if (inputMove.dx !== 0) {
-            this.facingRight = inputMove.dx > 0;
-
-            if (!this.tryMoveHorizontal(inputMove.dx)) {
-                this.setState(PLAYER_STATES.IDLE);
-            }
-        } else {
-            this.setState(PLAYER_STATES.IDLE);
+        // Horizontal movement and support check
+        const dx = inputMove.dx;
+        if (dx !== 0) {
+            this.facingRight = dx > 0;
         }
-    }
 
-    updateClimbing(dt, inputMove) {
-        const currentTile = this.level.getTile(this.tileX, this.tileY);
-
-        // If moving, continue movement
-        if (this.moving) {
-            this.continueMovement(dt, CONFIG.PLAYER_CLIMB_SPEED);
+        // Trailing-edge support check: fall only when entire sprite clears support.
+        // Use facingRight (current or last movement direction) to find the trailing edge.
+        const trailingEdge = this.facingRight ? this.x - HALF_TILE : this.x + HALF_TILE - 1;
+        const trailingTx = Math.floor(trailingEdge / TILE);
+        if (!this.hasSupportAt(trailingTx, ty)) {
+            this.setState(PLAYER_STATES.FALLING);
             return;
         }
 
-        // Arrived at target tile
-        this.alignToTile();
+        if (dx === 0) {
+            // No input — stop
+            this.setState(PLAYER_STATES.IDLE);
+            return;
+        }
 
-        // Check for exit
-        if (this.tileY < 0 && this.level.laddersRevealed) {
-            // Level complete handled in game.js
+        // Apply horizontal movement
+        const newX = this.x + dx * CONFIG.PLAYER_SPEED * TILE * dt;
+        this.x = this.resolveHorizontalMovement(newX, dx, ty);
+    }
+
+    updateClimbing(dt, inputMove) {
+        const tx = Math.floor(this.x / TILE);
+        const ty = Math.floor(this.y / TILE);
+        const currentTile = this.level.getTile(tx, ty);
+
+        // Snap X to ladder column
+        this.snapXToTile(tx);
+
+        // Check for exit (climbing off top of level)
+        if (ty < 0 && this.level.laddersRevealed) {
             return;
         }
 
         // Check for gold collection
         this.checkGoldCollection();
 
-        // Check if still on ladder
-        if (!isClimbable(currentTile, this.level.laddersRevealed)) {
-            // Left the ladder
-            if (this.hasSupport()) {
+        // If no longer on a climbable tile, handle transition
+        const lr = this.level.laddersRevealed;
+        if (!isClimbable(currentTile, lr)) {
+            const tileBelow = this.level.getTile(tx, ty + 1);
+            const ladderBelow = isClimbable(tileBelow, lr);
+
+            if (ladderBelow) {
+                // At the top of a ladder — either climbing off or descending onto it
+                const tileCenterY = ty * TILE + HALF_TILE;
+
+                if (this.y > tileCenterY) {
+                    if (inputMove.dy > 0) {
+                        // Descending onto ladder — continue down
+                        this.y += CONFIG.PLAYER_CLIMB_SPEED * TILE * dt;
+                        return;
+                    }
+                    // Climbing off top (going up) — auto-finish to tile center
+                    const newY = this.y - CONFIG.PLAYER_CLIMB_SPEED * TILE * dt;
+                    this.y = Math.max(newY, tileCenterY);
+                    if (this.y <= tileCenterY) {
+                        this.y = tileCenterY;
+                        this.setState(PLAYER_STATES.IDLE);
+                    }
+                    return;
+                }
+
+                // At or above tile center — allow descent or dismount
+                if (inputMove.dy > 0) {
+                    // Descend onto ladder
+                    this.y += CONFIG.PLAYER_CLIMB_SPEED * TILE * dt;
+                    return;
+                }
+                if (inputMove.dx !== 0) {
+                    const adjacentTile = this.level.getTile(tx + inputMove.dx, ty);
+                    if (!isSolid(adjacentTile)) {
+                        this.facingRight = inputMove.dx > 0;
+                        this.snapYToTile(ty);
+                        this.setState(PLAYER_STATES.RUNNING);
+                        this.updateRunning(dt, inputMove, 0);
+                        return;
+                    }
+                }
+
+                // No relevant input — stop climbing
+                this.setState(PLAYER_STATES.IDLE);
+                return;
+            }
+
+            // Fully off ladder, no ladder below
+            if (isHangable(currentTile)) {
+                this.setState(PLAYER_STATES.BAR_TRAVERSE);
+            } else if (this.hasSupport()) {
                 this.setState(PLAYER_STATES.IDLE);
             } else {
                 this.setState(PLAYER_STATES.FALLING);
@@ -277,57 +371,43 @@ export class Player {
             return;
         }
 
-        // Check for rope
-        if (isHangable(currentTile)) {
-            this.setState(PLAYER_STATES.BAR_TRAVERSE);
-            return;
+        // Horizontal dismount (only if target tile isn't solid)
+        if (inputMove.dx !== 0) {
+            const adjacentTile = this.level.getTile(tx + inputMove.dx, ty);
+            if (!isSolid(adjacentTile)) {
+                this.facingRight = inputMove.dx > 0;
+                this.snapYToTile(ty);
+                this.setState(PLAYER_STATES.RUNNING);
+                this.updateRunning(dt, inputMove, 0);
+                return;
+            }
         }
 
-        // Vertical movement
+        // Vertical movement — allow into any non-solid tile; next frame's
+        // climbability check at the top handles transitioning out
         if (inputMove.dy !== 0) {
-            const targetY = this.tileY + inputMove.dy;
-            const targetTile = this.level.getTile(this.tileX, targetY);
+            const newY = this.y + inputMove.dy * CONFIG.PLAYER_CLIMB_SPEED * TILE * dt;
+            const resolvedY = this.resolveVerticalMovement(newY, inputMove.dy, tx);
+            const newTy = Math.floor(resolvedY / TILE);
+            const newTile = this.level.getTile(tx, newTy);
 
-            // Can climb up onto ladder or into empty space (exiting)
-            if (inputMove.dy < 0) {
-                // Going up
-                if (!isSolid(targetTile) || isClimbable(targetTile, this.level.laddersRevealed)) {
-                    this.startMovement(this.tileX, targetY);
-                }
-            } else {
-                // Going down
-                if (isClimbable(targetTile, this.level.laddersRevealed) ||
-                    (isClimbable(currentTile, this.level.laddersRevealed) && !isSolid(targetTile))) {
-                    this.startMovement(this.tileX, targetY);
-                }
+            if (newTy < 0) {
+                // Allow climbing off top for exit
+                this.y = resolvedY;
+            } else if (!isSolid(newTile)) {
+                this.y = resolvedY;
             }
-        }
-
-        // Horizontal movement (can leave ladder)
-        if (inputMove.dx !== 0 && !this.moving) {
-            this.facingRight = inputMove.dx > 0;
-            if (this.tryMoveHorizontal(inputMove.dx)) {
-                // Will transition to appropriate state after movement
-            }
-        }
-
-        // No movement
-        if (inputMove.dx === 0 && inputMove.dy === 0 && !this.moving) {
-            // Stay climbing idle
+            // If solid, don't move (stay put)
         }
     }
 
     updateBarTraverse(dt, inputMove) {
-        const currentTile = this.level.getTile(this.tileX, this.tileY);
+        const tx = Math.floor(this.x / TILE);
+        const ty = Math.floor(this.y / TILE);
+        const currentTile = this.level.getTile(tx, ty);
 
-        // If moving, continue movement
-        if (this.moving) {
-            this.continueMovement(dt, CONFIG.PLAYER_SPEED);
-            return;
-        }
-
-        // Arrived at target tile
-        this.alignToTile();
+        // Snap Y to rope row
+        this.snapYToTile(ty);
 
         // Check for gold collection
         this.checkGoldCollection();
@@ -344,40 +424,42 @@ export class Player {
             return;
         }
 
-        // Horizontal movement on bar
-        if (inputMove.dx !== 0) {
-            this.facingRight = inputMove.dx > 0;
-            if (!this.tryMoveHorizontal(inputMove.dx)) {
-                // Can't move, stay on bar
-            }
-        }
-
         // Going down releases from bar
         if (inputMove.dy > 0) {
             this.setState(PLAYER_STATES.FALLING);
             return;
         }
 
-        // Can climb up if there's a ladder
+        // Climb up if there's a ladder
         if (inputMove.dy < 0 && isClimbable(currentTile, this.level.laddersRevealed)) {
             this.setState(PLAYER_STATES.CLIMBING);
+            this.snapXToTile(tx);
+            return;
         }
+
+        // Horizontal movement on bar
+        if (inputMove.dx !== 0) {
+            this.facingRight = inputMove.dx > 0;
+            const newX = this.x + inputMove.dx * CONFIG.PLAYER_SPEED * TILE * dt;
+            this.x = this.resolveHorizontalMovement(newX, inputMove.dx, ty);
+        }
+        // No input: stay on bar (no transition to IDLE)
     }
 
     updateFalling(dt) {
-        // Move down
-        const fallSpeed = CONFIG.PLAYER_FALL_SPEED * CONFIG.DISPLAY_TILE_SIZE * dt;
+        const fallSpeed = CONFIG.PLAYER_FALL_SPEED * TILE * dt;
         this.y += fallSpeed;
 
-        // Update tile position
-        const newTileY = Math.floor(this.y / CONFIG.DISPLAY_TILE_SIZE);
+        // Use locally computed tile positions
+        const tx = Math.floor(this.x / TILE);
+        const newTileY = Math.floor(this.y / TILE);
+        const prevTileY = this.tileY;
 
-        // Check if we've landed
-        const currentTile = this.level.getTile(this.tileX, newTileY);
-        const tileBelow = this.level.getTile(this.tileX, newTileY + 1);
+        const currentTile = this.level.getTile(tx, newTileY);
 
         // Catch on ladder
         if (isClimbable(currentTile, this.level.laddersRevealed)) {
+            this.tileX = tx;
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(PLAYER_STATES.CLIMBING);
@@ -385,8 +467,9 @@ export class Player {
             return;
         }
 
-        // Catch on rope (only if we've fallen to a new tile, to avoid catching on the rope we just dropped from)
-        if (isHangable(currentTile) && newTileY > this.tileY) {
+        // Catch on rope (only if we've fallen to a new tile row)
+        if (isHangable(currentTile) && newTileY > prevTileY) {
+            this.tileX = tx;
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(PLAYER_STATES.BAR_TRAVERSE);
@@ -395,7 +478,8 @@ export class Player {
         }
 
         // Land on solid ground (includes filled holes)
-        if (this.level.isSolidAt(this.tileX, newTileY + 1)) {
+        if (this.level.isSolidAt(tx, newTileY + 1)) {
+            this.tileX = tx;
             this.tileY = newTileY;
             this.alignToTile();
             this.setState(PLAYER_STATES.IDLE);
@@ -411,7 +495,6 @@ export class Player {
         this.digTimer -= dt;
 
         if (this.digTimer <= 0) {
-            // Complete dig
             this.level.digHole(this.digTargetX, this.digTargetY);
             this.setState(PLAYER_STATES.IDLE);
         }
@@ -421,27 +504,27 @@ export class Player {
         this.deathTimer += dt;
     }
 
-    // State transition
+    // --- State transition ---
+
     setState(newState) {
         this.prevState = this.state;
         this.state = newState;
         this.animTime = 0;
-
-        if (newState !== PLAYER_STATES.RUNNING && newState !== PLAYER_STATES.CLIMBING) {
-            this.moving = false;
-        }
     }
 
-    // Check if player has support
-    hasSupport() {
-        const currentTile = this.level.getTile(this.tileX, this.tileY);
-        const tileBelow = this.level.getTile(this.tileX, this.tileY + 1);
+    // --- Support / collision helpers ---
+
+    hasSupportAt(tx, ty) {
+        const currentTile = this.level.getTile(tx, ty);
 
         // On solid ground (includes filled holes)
-        if (this.level.isSolidAt(this.tileX, this.tileY + 1)) return true;
+        if (this.level.isSolidAt(tx, ty + 1)) return true;
 
         // On ladder
         if (isClimbable(currentTile, this.level.laddersRevealed)) return true;
+
+        // Standing on top of a ladder below
+        const tileBelow = this.level.getTile(tx, ty + 1);
         if (isClimbable(tileBelow, this.level.laddersRevealed)) return true;
 
         // On rope
@@ -450,59 +533,19 @@ export class Player {
         return false;
     }
 
-    // Try to move horizontally
-    tryMoveHorizontal(dx) {
-        const targetX = this.tileX + dx;
-        const targetTile = this.level.getTile(targetX, this.tileY);
-
-        if (!isSolid(targetTile)) {
-            this.startMovement(targetX, this.tileY);
-            return true;
-        }
-        return false;
+    hasSupport() {
+        return this.hasSupportAt(Math.floor(this.x / TILE), Math.floor(this.y / TILE));
     }
 
-    // Start movement to target tile
-    startMovement(targetX, targetY) {
-        this.targetX = targetX;
-        this.targetY = targetY;
-        this.moveStartX = this.x;
-        this.moveStartY = this.y;
-        this.moveProgress = 0;
-        this.moving = true;
-    }
+    // --- Actions ---
 
-    // Continue movement interpolation
-    continueMovement(dt, speed) {
-        const distance = CONFIG.DISPLAY_TILE_SIZE;
-        const moveAmount = speed * CONFIG.DISPLAY_TILE_SIZE * dt;
-
-        this.moveProgress += moveAmount;
-
-        if (this.moveProgress >= distance) {
-            // Arrived at target
-            this.tileX = this.targetX;
-            this.tileY = this.targetY;
-            this.alignToTile();
-            this.moving = false;
-        } else {
-            // Interpolate position
-            const progress = this.moveProgress / distance;
-            const targetPixelX = this.targetX * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
-            const targetPixelY = this.targetY * CONFIG.DISPLAY_TILE_SIZE + CONFIG.DISPLAY_TILE_SIZE / 2;
-
-            this.x = this.moveStartX + (targetPixelX - this.moveStartX) * progress;
-            this.y = this.moveStartY + (targetPixelY - this.moveStartY) * progress;
-        }
-    }
-
-    // Try to dig
     tryDig(direction) {
-        const digX = this.tileX + direction;
-        const digY = this.tileY + 1;
+        const tx = Math.floor(this.x / TILE);
+        const ty = Math.floor(this.y / TILE);
+        const digX = tx + direction;
+        const digY = ty + 1;
         const digTile = this.level.getTile(digX, digY);
 
-        // Can only dig brick, and not if standing on it
         if (isDiggable(digTile)) {
             this.setState(PLAYER_STATES.DIGGING);
             this.digTimer = CONFIG.DIG_DURATION;
@@ -513,15 +556,14 @@ export class Player {
         }
     }
 
-    // Check for gold collection
     checkGoldCollection() {
-        if (this.level.collectGold(this.tileX, this.tileY)) {
-            return true;
-        }
-        return false;
+        const tx = Math.floor(this.x / TILE);
+        const ty = Math.floor(this.y / TILE);
+        return this.level.collectGold(tx, ty);
     }
 
-    // Kill the player
+    // --- Lifecycle ---
+
     die() {
         if (this.invincibleTimer > 0) return false;
         if (this.state === PLAYER_STATES.DEAD) return false;
@@ -531,13 +573,13 @@ export class Player {
         return true;
     }
 
-    // Respawn the player
     respawn() {
         this.reset();
         this.invincibleTimer = CONFIG.PLAYER_INVINCIBILITY;
     }
 
-    // Get sprite info for rendering
+    // --- Rendering ---
+
     getSpriteInfo() {
         let spriteName = 'player_idle';
         let flipX = !this.facingRight;
@@ -547,7 +589,7 @@ export class Player {
                 spriteName = 'player_idle';
                 break;
             case PLAYER_STATES.RUNNING:
-                spriteName = 'player_run_1'; // Animation handled in render
+                spriteName = 'player_run_1';
                 break;
             case PLAYER_STATES.CLIMBING:
                 spriteName = 'player_climb_1';
@@ -569,7 +611,6 @@ export class Player {
         return { spriteName, flipX };
     }
 
-    // Get animation name for current state
     getAnimationName() {
         switch (this.state) {
             case PLAYER_STATES.RUNNING:
@@ -587,17 +628,15 @@ export class Player {
         }
     }
 
-    // Check if player is flashing (invincible)
     isFlashing() {
         if (this.invincibleTimer <= 0) return false;
         return Math.floor(this.invincibleTimer * 10) % 2 === 0;
     }
 
-    // Get render position (top-left of sprite)
     getRenderPos() {
         return {
-            x: this.x - CONFIG.DISPLAY_TILE_SIZE / 2,
-            y: this.y - CONFIG.DISPLAY_TILE_SIZE / 2
+            x: this.x - HALF_TILE,
+            y: this.y - HALF_TILE
         };
     }
 }
